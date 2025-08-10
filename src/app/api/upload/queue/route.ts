@@ -29,10 +29,10 @@ export async function POST(request: NextRequest) {
 
       // Create file-like object for queue processing
       const file = {
-        name,
-        size,
-        type,
-        stream: null, // Would be set when actual upload starts
+        name: name as string,
+        size: size as number,
+        type: type as string,
+        stream: new ReadableStream() as any, // Placeholder stream - will be replaced during actual upload
       };
 
       const uploadId = await uploader.addToQueue(file, priority, options);

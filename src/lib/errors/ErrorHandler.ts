@@ -31,6 +31,11 @@ export interface ErrorContext {
   component?: string;
   action?: string;
   metadata?: Record<string, unknown>;
+  // Additional context fields for specific use cases
+  attempt?: number;
+  messageId?: string;
+  rule?: string;
+  [key: string]: unknown; // Allow additional properties
 }
 
 export interface AppError {

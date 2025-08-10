@@ -113,7 +113,7 @@ export class MessageSender {
           
           results.push({
             success: true,
-            messageId: result?.key?.id,
+            messageId: result?.key?.id || undefined,
             sentAt: new Date(),
           });
 
@@ -218,7 +218,7 @@ export class MessageSender {
           
           results.push({
             success: true,
-            messageId: result?.key?.id,
+            messageId: result?.key?.id || undefined,
             sentAt: new Date(),
           });
 
@@ -321,7 +321,7 @@ export class MessageSender {
           
           results.push({
             success: true,
-            messageId: result?.key?.id,
+            messageId: result?.key?.id || undefined,
             sentAt: new Date(),
           });
 

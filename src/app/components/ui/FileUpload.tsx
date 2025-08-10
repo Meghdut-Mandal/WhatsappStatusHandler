@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, DragEvent, ChangeEvent } from 'react';
 import { Upload, X, File, Image, Video, Music, FileText, AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/cn';
 
 export interface FileWithPreview extends File {
   id: string;
@@ -10,6 +10,7 @@ export interface FileWithPreview extends File {
   uploadProgress?: number;
   uploadStatus?: 'pending' | 'uploading' | 'completed' | 'error';
   error?: string;
+  mediaMetaId?: string;
 }
 
 interface FileUploadProps {

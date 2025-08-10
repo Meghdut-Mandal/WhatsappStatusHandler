@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 
     // Get send history
     const sendHistory = await SendHistoryService.getBySessionId(activeSessionId, filters);
-    const totalCount = await SendHistoryService.getCountBySessionId(activeSessionId, filters);
+    const totalCount = sendHistory.length;
 
     // Apply search filter (done in memory for simplicity)
     let filteredHistory = sendHistory;
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
       const searchTerm = search.toLowerCase();
       filteredHistory = sendHistory.filter(item => 
         item.targetIdentifier?.toLowerCase().includes(searchTerm) ||
-        item.files?.some((file: any) => 
+        (typeof item.files === 'string' ? JSON.parse(item.files) : item.files)?.some((file: any) => 
           file.name?.toLowerCase().includes(searchTerm) ||
           file.caption?.toLowerCase().includes(searchTerm)
         )
@@ -109,17 +109,23 @@ export async function GET(request: NextRequest) {
       targetType: item.targetType,
       targetName: item.targetIdentifier, // This would be resolved to actual names
       targetId: item.targetIdentifier,
-      files: Array.isArray(item.files) ? item.files.map((file: any) => ({
-        name: file.name || file.filename || 'Unknown',
-        size: file.size || file.sizeBytes || 0,
-        type: file.type || file.mimetype || 'unknown',
-      })) : [],
-      caption: item.files?.[0]?.caption, // Get caption from first file if available
+      files: (() => {
+        const parsedFiles = typeof item.files === 'string' ? JSON.parse(item.files) : item.files;
+        return Array.isArray(parsedFiles) ? parsedFiles.map((file: any) => ({
+          name: file.name || file.filename || 'Unknown',
+          size: file.size || file.sizeBytes || 0,
+          type: file.type || file.mimetype || 'unknown',
+        })) : [];
+      })(),
+      caption: (() => {
+        const parsedFiles = typeof item.files === 'string' ? JSON.parse(item.files) : item.files;
+        return Array.isArray(parsedFiles) && parsedFiles.length > 0 ? parsedFiles[0]?.caption : undefined;
+      })(),
       status: item.status,
       createdAt: item.createdAt,
       completedAt: item.completedAt,
       error: item.status === 'failed' ? 'Send failed' : undefined,
-      messageId: item.messageId,
+      // messageId: item.messageId, // Not available in current schema
     }));
 
     // Get statistics
@@ -186,15 +192,19 @@ export async function DELETE(request: NextRequest) {
 
     if (historyId) {
       // Delete specific history item
-      const deleted = await SendHistoryService.delete(historyId);
-      deletedCount = deleted ? 1 : 0;
+      await SendHistoryService.delete(historyId);
+      deletedCount = 1;
     } else if (clearAll) {
       // Clear all history for session
-      deletedCount = await SendHistoryService.clearBySessionId(activeSessionId);
+      const historyItems = await SendHistoryService.getBySessionId(activeSessionId);
+      for (const item of historyItems) {
+        await SendHistoryService.delete(item.id);
+      }
+      deletedCount = historyItems.length;
     } else if (olderThan) {
       // Clear history older than specified date
       const cutoffDate = new Date(olderThan);
-      deletedCount = await SendHistoryService.clearOlderThan(activeSessionId, cutoffDate);
+      deletedCount = await SendHistoryService.cleanup(Math.floor((Date.now() - cutoffDate.getTime()) / (1000 * 60 * 60 * 24)));
     } else {
       return NextResponse.json({
         success: false,

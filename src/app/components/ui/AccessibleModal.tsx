@@ -310,7 +310,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       onClose={onClose}
       title={title}
       size="sm"
-      initialFocus={confirmButtonRef}
+      initialFocus={confirmButtonRef as React.RefObject<HTMLElement>}
     >
       <div className="space-y-4">
         <p className="text-gray-700">{message}</p>

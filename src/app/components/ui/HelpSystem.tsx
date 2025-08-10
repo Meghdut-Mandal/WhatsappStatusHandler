@@ -50,7 +50,7 @@ export const HelpSystem: React.FC<HelpSystemProps> = ({
     articles: category.articles.filter(article =>
       article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       article.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      article.content.toString().toLowerCase().includes(searchQuery.toLowerCase())
+      article.content?.toString().toLowerCase().includes(searchQuery.toLowerCase())
     )
   })).filter(category => category.articles.length > 0 || searchQuery === '');
 

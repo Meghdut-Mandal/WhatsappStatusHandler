@@ -18,7 +18,7 @@ import {
   RefreshCw,
   Upload as UploadIcon
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/cn';
 
 interface FileManagerProps {
   onFileSend?: (files: FileWithPreview[], targetType: 'status' | 'contact' | 'group', targetId?: string) => void;

@@ -15,7 +15,7 @@ import { EventEmitter } from 'events';
 import path from 'path';
 import fs from 'fs/promises';
 import { ConnectionStabilizer } from './ConnectionStabilizer';
-import { errorHandler, ErrorCategory } from '../errors/ErrorHandler';
+import { errorHandler, ErrorCategory, ErrorSeverity } from '../errors/ErrorHandler';
 import { initializeWebSocketPolyfills, isWebSocketPolyfillReady } from '../utils/websocket-polyfill';
 import { logWebSocketFixTest } from '../utils/test-websocket-fix';
 
@@ -65,7 +65,9 @@ export class BaileysManager extends EventEmitter {
   private setupStabilizerEventHandlers(): void {
     this.connectionStabilizer.on('reconnect_attempt', (data) => {
       console.log(`Reconnect attempt ${data.attempt}/${data.maxAttempts}`);
-      this.initialize(this.sessionId);
+      if (this.sessionId) {
+        this.initialize(this.sessionId);
+      }
     });
 
     this.connectionStabilizer.on('connection_stabilized', () => {
@@ -99,7 +101,7 @@ export class BaileysManager extends EventEmitter {
     } catch (error) {
       errorHandler.handleError(error, {
         category: ErrorCategory.FILE_SYSTEM,
-        severity: 'medium',
+        severity: ErrorSeverity.MEDIUM,
         context: { component: 'BaileysManager', action: 'ensure_auth_dir' }
       });
     }
@@ -158,8 +160,8 @@ export class BaileysManager extends EventEmitter {
         syncFullHistory: true,
         options: {
           // WebSocket configuration to prevent buffer utility errors
-          perMessageDeflate: false,
-          skipUTF8Validation: false,
+          // perMessageDeflate: false, // Not supported in current Baileys version
+          // skipUTF8Validation: false, // Not supported in current Baileys version
           maxPayload: 100 * 1024 * 1024, // 100MB
         },
         // Additional socket configuration
@@ -192,7 +194,9 @@ export class BaileysManager extends EventEmitter {
 
       // Restore auth state from database
       const sessionDir = path.join(this.authDir, session.id);
-      await this.restoreAuthState(sessionDir, session.authBlob);
+      if (session.authBlob) {
+        await this.restoreAuthState(sessionDir, session.authBlob);
+      }
 
       const authState = await useMultiFileAuthState(sessionDir);
       const { state, saveCreds } = authState;
@@ -210,8 +214,8 @@ export class BaileysManager extends EventEmitter {
         syncFullHistory: true,
         options: {
           // WebSocket configuration to prevent buffer utility errors
-          perMessageDeflate: false,
-          skipUTF8Validation: false,
+          // perMessageDeflate: false, // Not supported in current Baileys version
+          // skipUTF8Validation: false, // Not supported in current Baileys version
           maxPayload: 100 * 1024 * 1024, // 100MB
         },
         // Additional socket configuration
@@ -265,7 +269,14 @@ export class BaileysManager extends EventEmitter {
       } else if (connection === 'open') {
         console.log('WhatsApp connection opened');
         this.connectionStabilizer.onConnectionOpen();
-        this.connectionStatus = { status: 'connected', session: this.socket?.user };
+        this.connectionStatus = { 
+          status: 'connected', 
+          session: this.socket?.user ? {
+            ...this.socket.user,
+            id: this.socket.user.id,
+            name: this.socket.user.name,
+          } : undefined
+        };
         this.emit('status_update', this.connectionStatus);
         this.sessionRecoveryAttempts = 0;
 
@@ -279,7 +290,7 @@ export class BaileysManager extends EventEmitter {
           } catch (error) {
             errorHandler.handleError(error, {
               category: ErrorCategory.DATABASE,
-              severity: 'medium',
+              severity: ErrorSeverity.MEDIUM,
               context: { component: 'BaileysManager', action: 'update_last_seen', sessionId: this.sessionId }
             });
           }
@@ -439,7 +450,7 @@ export class BaileysManager extends EventEmitter {
         } catch (error) {
           errorHandler.handleError(error, {
             category: ErrorCategory.DATABASE,
-            severity: 'medium',
+            severity: ErrorSeverity.MEDIUM,
             context: { component: 'BaileysManager', action: 'disconnect_update_session' }
           });
         }
@@ -452,7 +463,7 @@ export class BaileysManager extends EventEmitter {
     } catch (error) {
       errorHandler.handleError(error, {
         category: ErrorCategory.WHATSAPP,
-        severity: 'medium',
+        severity: ErrorSeverity.MEDIUM,
         context: { component: 'BaileysManager', action: 'disconnect' }
       });
     }
@@ -529,11 +540,11 @@ export class BaileysManager extends EventEmitter {
       // Don't throw error here to avoid disrupting the connection process
       errorHandler.handleError(error, {
         category: ErrorCategory.WHATSAPP,
-        severity: 'low',
+        severity: ErrorSeverity.LOW,
         context: { 
           component: 'BaileysManager', 
           action: 'send_connection_confirmation',
-          sessionId: this.sessionId
+          sessionId: this.sessionId || undefined
         }
       });
     }
@@ -643,7 +654,7 @@ export class BaileysManager extends EventEmitter {
     } catch (error) {
       errorHandler.handleError(error, {
         category: ErrorCategory.WHATSAPP,
-        severity: 'high',
+        severity: ErrorSeverity.HIGH,
         context: { 
           component: 'BaileysManager', 
           action: 'session_recovery',

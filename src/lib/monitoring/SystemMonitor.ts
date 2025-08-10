@@ -529,7 +529,7 @@ export class SystemMonitor extends EventEmitter {
       if (check.status === 'critical') {
         overall = 'critical';
         break;
-      } else if (check.status === 'warning' && overall !== 'critical') {
+      } else if (check.status === 'warning' && overall === 'healthy') {
         overall = 'warning';
       }
     }

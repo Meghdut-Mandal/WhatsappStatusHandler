@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { systemMonitor } from '@/lib/monitoring/SystemMonitor';
-import { errorHandler, ErrorCategory } from '@/lib/errors/ErrorHandler';
+import { errorHandler, ErrorCategory, ErrorSeverity } from '@/lib/errors/ErrorHandler';
 
 /**
  * GET /api/health - Get system health status
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const appError = errorHandler.handleError(error, {
       category: ErrorCategory.SYSTEM,
-      severity: 'high',
+      severity: ErrorSeverity.HIGH,
       context: { component: 'HealthAPI', action: 'get_health' }
     });
 
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const appError = errorHandler.handleError(error, {
       category: ErrorCategory.SYSTEM,
-      severity: 'medium',
+      severity: ErrorSeverity.MEDIUM,
       context: { component: 'HealthAPI', action: 'manual_check' }
     });
 

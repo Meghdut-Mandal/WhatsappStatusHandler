@@ -6,7 +6,7 @@
 import { EventEmitter } from 'events';
 import { proto, WASocket } from '@whiskeysockets/baileys';
 import { SendHistoryService } from '../db';
-import { errorHandler, ErrorCategory } from '../errors/ErrorHandler';
+import { errorHandler, ErrorCategory, ErrorSeverity } from '../errors/ErrorHandler';
 
 export interface MessageAttempt {
   id: string;
@@ -259,7 +259,7 @@ export class MessageReliabilityManager extends EventEmitter {
     } catch (error) {
       errorHandler.handleError(error, {
         category: ErrorCategory.WHATSAPP,
-        severity: 'medium',
+        severity: ErrorSeverity.MEDIUM,
         context: { component: 'MessageReliabilityManager', action: 'process_queue' }
       });
     } finally {
@@ -347,7 +347,7 @@ export class MessageReliabilityManager extends EventEmitter {
 
       errorHandler.handleError(error, {
         category: ErrorCategory.WHATSAPP,
-        severity: 'medium',
+        severity: ErrorSeverity.MEDIUM,
         context: { 
           component: 'MessageReliabilityManager', 
           action: 'send_message',
@@ -497,19 +497,19 @@ export class MessageReliabilityManager extends EventEmitter {
         sessionId: message.sessionId,
         targetType: message.targetType,
         targetIdentifier: message.targetIdentifier,
-        files: [{
+        files: JSON.stringify([{
           filename: message.content.filename || 'message',
           mimetype: message.content.mimetype || 'text/plain',
           size: Buffer.isBuffer(message.content.data) ? message.content.data.length : message.content.data.toString().length
-        }],
-        status: 'sent',
+        }]),
+        status: 'completed',
         messageId: result.key?.id,
         completedAt: new Date()
       });
     } catch (error) {
       errorHandler.handleError(error, {
         category: ErrorCategory.DATABASE,
-        severity: 'low',
+        severity: ErrorSeverity.LOW,
         context: { 
           component: 'MessageReliabilityManager', 
           action: 'save_to_history',

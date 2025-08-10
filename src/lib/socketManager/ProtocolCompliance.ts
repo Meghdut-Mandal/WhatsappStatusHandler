@@ -5,7 +5,7 @@
 
 import { EventEmitter } from 'events';
 import { WASocket, BaileysEventMap, ConnectionState } from '@whiskeysockets/baileys';
-import { errorHandler, ErrorCategory } from '../errors/ErrorHandler';
+import { errorHandler, ErrorCategory, ErrorSeverity } from '../errors/ErrorHandler';
 
 export interface ProtocolMetrics {
   messagesPerMinute: number;
@@ -276,7 +276,7 @@ export class ProtocolCompliance extends EventEmitter {
       } catch (error) {
         errorHandler.handleError(error, {
           category: ErrorCategory.WHATSAPP,
-          severity: 'low',
+          severity: ErrorSeverity.LOW,
           context: { 
             component: 'ProtocolCompliance', 
             action: 'compliance_check',

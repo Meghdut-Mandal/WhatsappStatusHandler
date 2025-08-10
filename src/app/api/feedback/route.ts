@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { errorHandler, ErrorCategory } from '@/lib/errors/ErrorHandler';
+import { errorHandler, ErrorCategory, ErrorSeverity } from '@/lib/errors/ErrorHandler';
 
 export interface FeedbackData {
   type: 'bug' | 'feature' | 'general' | 'compliment';
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const appError = errorHandler.handleError(error, {
       category: ErrorCategory.SYSTEM,
-      severity: 'medium',
+      severity: ErrorSeverity.MEDIUM,
       context: { component: 'FeedbackAPI', action: 'submit_feedback' }
     });
 
@@ -170,7 +170,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const appError = errorHandler.handleError(error, {
       category: ErrorCategory.SYSTEM,
-      severity: 'medium',
+      severity: ErrorSeverity.MEDIUM,
       context: { component: 'FeedbackAPI', action: 'get_stats' }
     });
 

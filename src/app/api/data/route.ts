@@ -49,10 +49,10 @@ export async function GET(request: NextRequest) {
 
     // Export send history
     if (dataType === 'all' || dataType === 'history') {
-      let activeSessionId = sessionId;
+      let activeSessionId: string | null = sessionId;
       if (!activeSessionId) {
         const activeSession = await SessionService.getActive();
-        activeSessionId = activeSession?.id;
+        activeSessionId = activeSession?.id || null;
       }
 
       if (activeSessionId) {
@@ -65,7 +65,6 @@ export async function GET(request: NextRequest) {
           status: item.status,
           createdAt: item.createdAt,
           completedAt: item.completedAt,
-          messageId: item.messageId,
         }));
       }
     }
@@ -103,7 +102,7 @@ export async function GET(request: NextRequest) {
       
       const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
       
-      return new NextResponse(zipBuffer, {
+      return new NextResponse(zipBuffer as BodyInit, {
         headers: {
           'Content-Type': 'application/zip',
           'Content-Disposition': `attachment; filename="whatsapp_status_handler_export_${new Date().toISOString().split('T')[0]}.zip"`,
@@ -212,7 +211,7 @@ export async function POST(request: NextRequest) {
           if (!existingSession) {
             await SessionService.create({
               deviceName: sessionData.deviceName + ' (Imported)',
-              authBlob: null, // Don't import auth data
+              authBlob: undefined, // Don't import auth data
             });
             results.sessions++;
           }
@@ -229,7 +228,7 @@ export async function POST(request: NextRequest) {
       if (!targetSession) {
         targetSession = await SessionService.create({
           deviceName: 'Imported Session',
-          authBlob: null,
+          authBlob: undefined,
         });
       }
 
@@ -241,7 +240,6 @@ export async function POST(request: NextRequest) {
             targetIdentifier: historyItem.targetIdentifier,
             files: historyItem.files,
             status: historyItem.status,
-            completedAt: historyItem.completedAt ? new Date(historyItem.completedAt) : null,
           });
           results.sendHistory++;
         } catch (error) {
@@ -313,7 +311,7 @@ export async function DELETE(request: NextRequest) {
         
         // Also clear media metadata for temporary files
         try {
-          const deletedMedia = await MediaMetaService.clearTemporary();
+          const deletedMedia = await MediaMetaService.cleanupTemporary();
           results.recordsDeleted += deletedMedia;
         } catch (error) {
           results.errors.push(`Failed to clear media metadata: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -325,7 +323,7 @@ export async function DELETE(request: NextRequest) {
         try {
           const activeSession = await SessionService.getActive();
           if (activeSession) {
-            const deletedHistory = await SendHistoryService.clearBySessionId(activeSession.id);
+            const deletedHistory = await SendHistoryService.cleanup();
             results.recordsDeleted = deletedHistory;
           }
         } catch (error) {
@@ -354,14 +352,20 @@ export async function DELETE(request: NextRequest) {
           // Clear all database records
           const sessions = await SessionService.getAll();
           for (const session of sessions) {
-            await SendHistoryService.clearBySessionId(session.id);
+            const historyItems = await SendHistoryService.getBySessionId(session.id);
+            for (const item of historyItems) {
+              await SendHistoryService.delete(item.id);
+            }
             if (!session.isActive) {
               await SessionService.delete(session.id);
             }
           }
           
           // Clear media metadata
-          await MediaMetaService.clearAll();
+          const allMedia = await MediaMetaService.getAll();
+          for (const media of allMedia) {
+            await MediaMetaService.delete(media.id);
+          }
           
           // Clear upload cache
           StreamingUploader.cleanup();

@@ -229,8 +229,9 @@ export default function SettingsPage() {
       <MainContent 
         title="Settings" 
         subtitle="Configure your WhatsApp Status Handler"
-        loading={true}
-      />
+      >
+        <div className="animate-pulse">Loading settings...</div>
+      </MainContent>
     );
   }
 

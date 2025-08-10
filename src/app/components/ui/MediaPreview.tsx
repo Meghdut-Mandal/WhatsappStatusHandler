@@ -22,7 +22,7 @@ import {
   Music,
   Eye
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/cn';
 import { FileWithPreview } from './FileUpload';
 
 interface MediaPreviewProps {
@@ -46,13 +46,24 @@ export function MediaPreview({
 }: MediaPreviewProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Early return if file is not provided or missing required properties
+  if (!file || !file.type) {
+    return (
+      <div className={cn('w-full h-48 bg-gray-100 dark:bg-gray-800 rounded-lg flex flex-col items-center justify-center text-gray-500 dark:text-gray-400', className)}>
+        <File className="w-8 h-8" />
+        <p className="mt-2 text-sm text-center px-2">Invalid file</p>
+      </div>
+    );
+  }
+
   const handlePreviewClick = () => {
-    if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+    if (file.type?.startsWith('image/') || file.type?.startsWith('video/')) {
       setIsModalOpen(true);
     }
   };
 
   const getFileIcon = () => {
+    if (!file.type) return <File className="w-8 h-8" />;
     if (file.type.startsWith('image/')) return <ImageIcon className="w-8 h-8" />;
     if (file.type.startsWith('video/')) return <VideoIcon className="w-8 h-8" />;
     if (file.type.startsWith('audio/')) return <Music className="w-8 h-8" />;
@@ -63,14 +74,14 @@ export function MediaPreview({
   return (
     <>
       <div className={cn('relative group', className)}>
-        {file.type.startsWith('image/') && file.preview ? (
+        {file.type?.startsWith('image/') && file.preview ? (
           <div 
             className="relative cursor-pointer overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
             onClick={handlePreviewClick}
           >
             <img
               src={file.preview}
-              alt={file.name}
+              alt={file.name || 'Unknown file'}
               className="w-full h-48 object-cover transition-transform group-hover:scale-105"
             />
             {showControls && (
@@ -79,7 +90,7 @@ export function MediaPreview({
               </div>
             )}
           </div>
-        ) : file.type.startsWith('video/') && file.preview ? (
+        ) : file.type?.startsWith('video/') && file.preview ? (
           <div 
             className="relative cursor-pointer overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
             onClick={handlePreviewClick}
@@ -98,8 +109,8 @@ export function MediaPreview({
         ) : (
           <div className="w-full h-48 bg-gray-100 dark:bg-gray-800 rounded-lg flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
             {getFileIcon()}
-            <p className="mt-2 text-sm text-center px-2 truncate w-full">{file.name}</p>
-            <p className="text-xs text-gray-400">{formatFileSize(file.size)}</p>
+            <p className="mt-2 text-sm text-center px-2 truncate w-full">{file.name || 'Unknown file'}</p>
+            <p className="text-xs text-gray-400">{formatFileSize(file.size || 0)}</p>
           </div>
         )}
 
@@ -127,7 +138,7 @@ export function MediaPreview({
 }
 
 function MediaModal({ file, isOpen, onClose }: MediaModalProps) {
-  if (!isOpen) return null;
+  if (!isOpen || !file || !file.type) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
@@ -141,9 +152,9 @@ function MediaModal({ file, isOpen, onClose }: MediaModalProps) {
         </button>
 
         {/* Content */}
-        {file.type.startsWith('image/') ? (
+        {file.type?.startsWith('image/') ? (
           <ImageViewer file={file} />
-        ) : file.type.startsWith('video/') ? (
+        ) : file.type?.startsWith('video/') ? (
           <VideoPlayer file={file} />
         ) : null}
       </div>
@@ -189,7 +200,7 @@ function ImageViewer({ file }: { file: FileWithPreview }) {
   };
 
   const handleDownload = () => {
-    if (file.preview) {
+    if (file.preview && file.name) {
       const link = document.createElement('a');
       link.href = file.preview;
       link.download = file.name;
@@ -238,7 +249,7 @@ function ImageViewer({ file }: { file: FileWithPreview }) {
         <img
           ref={imageRef}
           src={file.preview}
-          alt={file.name}
+          alt={file.name || 'Image preview'}
           className={cn(
             'max-w-full max-h-full object-contain transition-transform',
             isDragging ? 'cursor-grabbing' : zoom > 1 ? 'cursor-grab' : 'cursor-default'
@@ -256,8 +267,8 @@ function ImageViewer({ file }: { file: FileWithPreview }) {
 
       {/* Info */}
       <div className="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-2 rounded-lg">
-        <p className="text-sm font-medium">{file.name}</p>
-        <p className="text-xs text-gray-300">{formatFileSize(file.size)} • {zoom.toFixed(1)}x</p>
+        <p className="text-sm font-medium">{file.name || 'Unknown file'}</p>
+        <p className="text-xs text-gray-300">{formatFileSize(file.size || 0)} • {zoom.toFixed(1)}x</p>
       </div>
     </div>
   );
@@ -273,7 +284,7 @@ function VideoPlayer({ file }: { file: FileWithPreview }) {
   const [showControls, setShowControls] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const controlsTimeoutRef = useRef<NodeJS.Timeout>();
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -351,7 +362,9 @@ function VideoPlayer({ file }: { file: FileWithPreview }) {
 
   const showControlsTemporarily = () => {
     setShowControls(true);
-    clearTimeout(controlsTimeoutRef.current);
+            if (controlsTimeoutRef.current) {
+          clearTimeout(controlsTimeoutRef.current);
+        }
     controlsTimeoutRef.current = setTimeout(() => {
       if (isPlaying) setShowControls(false);
     }, 3000);
@@ -384,8 +397,8 @@ function VideoPlayer({ file }: { file: FileWithPreview }) {
           {/* Top controls */}
           <div className="flex justify-between items-start">
             <div className="bg-black/50 text-white px-3 py-2 rounded-lg">
-              <p className="text-sm font-medium">{file.name}</p>
-              <p className="text-xs text-gray-300">{formatFileSize(file.size)}</p>
+              <p className="text-sm font-medium">{file.name || 'Unknown file'}</p>
+              <p className="text-xs text-gray-300">{formatFileSize(file.size || 0)}</p>
             </div>
           </div>
 

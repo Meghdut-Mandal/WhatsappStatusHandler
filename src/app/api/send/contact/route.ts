@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
     const { SendHistoryService } = await import('@/lib/db');
     const activeSession = await SessionService.getActive();
     
-    let recentSends = [];
+    let recentSends: any[] = [];
     if (activeSession) {
       recentSends = await SendHistoryService.getBySessionId(activeSession.id, {
         limit: 10,
@@ -134,10 +134,13 @@ export async function GET(request: NextRequest) {
       // Filter for contact sends only
       recentSends = recentSends
         .filter(send => send.targetType === 'contact')
-        .map(send => ({
+        .map((send: any) => ({
           id: send.id,
           phoneNumber: send.targetIdentifier,
-          filesCount: Array.isArray(send.files) ? send.files.length : 0,
+          filesCount: (() => {
+            const parsedFiles = typeof send.files === 'string' ? JSON.parse(send.files) : send.files;
+            return Array.isArray(parsedFiles) ? parsedFiles.length : 0;
+          })(),
           sentAt: send.completedAt || send.createdAt,
           status: send.status,
         }));
@@ -150,7 +153,7 @@ export async function GET(request: NextRequest) {
         connectionStatus: connectionStatus.status,
         whatsappUser: connectionStatus.session,
       },
-      contacts: contacts.map(contact => ({
+      contacts: contacts.map((contact: any) => ({
         id: contact.id,
         name: contact.name || contact.notify,
         verifiedName: contact.verifiedName,

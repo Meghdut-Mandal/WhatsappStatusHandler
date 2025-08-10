@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { backupManager } from '@/lib/backup/BackupManager';
-import { errorHandler, ErrorCategory } from '@/lib/errors/ErrorHandler';
+import { errorHandler, ErrorCategory, ErrorSeverity } from '@/lib/errors/ErrorHandler';
 
 /**
  * POST /api/backup/restore - Restore from backup file
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const appError = errorHandler.handleError(error, {
       category: ErrorCategory.SYSTEM,
-      severity: 'high',
+      severity: ErrorSeverity.HIGH,
       context: { component: 'BackupAPI', action: 'restore_backup' }
     });
 

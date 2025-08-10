@@ -503,7 +503,7 @@ export class BackupManager extends EventEmitter {
         status: item.status,
         createdAt: item.createdAt,
         completedAt: item.completedAt,
-        messageId: item.messageId
+        // messageId: item.messageId // Not available in current schema
       })));
     }
 
@@ -580,7 +580,7 @@ export class BackupManager extends EventEmitter {
         } else {
           await SessionService.create({
             deviceName: sessionData.deviceName + ' (Restored)',
-            authBlob: null
+            authBlob: undefined
           });
         }
         
@@ -603,7 +603,7 @@ export class BackupManager extends EventEmitter {
         if (!session) {
           session = await SessionService.create({
             deviceName: 'Restored Session',
-            authBlob: null
+            authBlob: undefined
           });
         }
 
@@ -613,7 +613,7 @@ export class BackupManager extends EventEmitter {
           targetIdentifier: historyItem.targetIdentifier,
           files: historyItem.files,
           status: historyItem.status,
-          completedAt: historyItem.completedAt ? new Date(historyItem.completedAt) : null
+          // completedAt: historyItem.completedAt ? new Date(historyItem.completedAt) : null // Not supported in create
         });
         
         restored++;
@@ -632,11 +632,11 @@ export class BackupManager extends EventEmitter {
       try {
         await MediaMetaService.create({
           filename: metaItem.filename,
+          originalName: metaItem.originalName || metaItem.filename,
           mimetype: metaItem.mimetype,
           sizeBytes: metaItem.sizeBytes,
+          storagePath: metaItem.storagePath || '/tmp/placeholder', // Placeholder path
           sha256: metaItem.sha256,
-          storagePath: null, // Will be set when file is uploaded again
-          tmpCreatedAt: metaItem.tmpCreatedAt ? new Date(metaItem.tmpCreatedAt) : new Date()
         });
         
         restored++;

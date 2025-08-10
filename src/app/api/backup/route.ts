@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { backupManager } from '@/lib/backup/BackupManager';
-import { errorHandler, ErrorCategory } from '@/lib/errors/ErrorHandler';
+import { errorHandler, ErrorCategory, ErrorSeverity } from '@/lib/errors/ErrorHandler';
 
 /**
  * GET /api/backup - List all backups
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const appError = errorHandler.handleError(error, {
       category: ErrorCategory.SYSTEM,
-      severity: 'medium',
+      severity: ErrorSeverity.MEDIUM,
       context: { component: 'BackupAPI', action: 'list_backups' }
     });
 
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const appError = errorHandler.handleError(error, {
       category: ErrorCategory.SYSTEM,
-      severity: 'high',
+      severity: ErrorSeverity.HIGH,
       context: { component: 'BackupAPI', action: 'create_backup' }
     });
 
@@ -143,7 +143,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     const appError = errorHandler.handleError(error, {
       category: ErrorCategory.SYSTEM,
-      severity: 'medium',
+      severity: ErrorSeverity.MEDIUM,
       context: { component: 'BackupAPI', action: 'delete_backup' }
     });
 

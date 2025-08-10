@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { systemMonitor } from '@/lib/monitoring/SystemMonitor';
-import { errorHandler, ErrorCategory } from '@/lib/errors/ErrorHandler';
+import { errorHandler, ErrorCategory, ErrorSeverity } from '@/lib/errors/ErrorHandler';
 
 /**
  * GET /api/metrics - Get system metrics
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const appError = errorHandler.handleError(error, {
       category: ErrorCategory.SYSTEM,
-      severity: 'medium',
+      severity: ErrorSeverity.MEDIUM,
       context: { component: 'MetricsAPI', action: 'get_metrics' }
     });
 
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const appError = errorHandler.handleError(error, {
       category: ErrorCategory.SYSTEM,
-      severity: 'medium',
+      severity: ErrorSeverity.MEDIUM,
       context: { component: 'MetricsAPI', action: 'manage_alerts' }
     });
 

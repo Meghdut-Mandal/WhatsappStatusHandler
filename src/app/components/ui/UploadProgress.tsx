@@ -17,7 +17,7 @@ import {
   Music,
   FileText
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/cn';
 import { FileWithPreview } from './FileUpload';
 
 export interface UploadProgressItem {

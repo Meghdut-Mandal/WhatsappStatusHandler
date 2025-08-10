@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
     const { SendHistoryService } = await import('@/lib/db');
     const activeSession = await SessionService.getActive();
     
-    let recentSends = [];
+    let recentSends: any[] = [];
     if (activeSession) {
       recentSends = await SendHistoryService.getBySessionId(activeSession.id, {
         limit: 10,
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
         connectionStatus: connectionStatus.status,
         whatsappUser: connectionStatus.session,
       },
-      recentSends: recentSends.map(send => ({
+      recentSends: recentSends.map((send: any) => ({
         id: send.id,
         filesCount: Array.isArray(send.files) ? send.files.length : 0,
         sentAt: send.completedAt,
