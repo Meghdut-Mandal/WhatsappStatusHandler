@@ -72,14 +72,17 @@ export async function POST(request: NextRequest) {
       await baileysManager.disconnect();
       
       // Wait for disconnect to complete
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Increased wait time
     } else {
       console.log('No active connection to disconnect');
     }
     
     // Initialize new connection
-    console.log('Initializing new connection...');
+    console.log('Initializing new connection with enhanced settings...');
     await baileysManager.initialize();
+    
+    // Wait a bit for QR code generation
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Get the status after initialization
     const status = baileysManager.getConnectionStatus();
@@ -89,7 +92,9 @@ export async function POST(request: NextRequest) {
       success: true,
       status: status.status,
       qrCode: qrCode,
-      message: status.status === 'connecting' ? 'Connection started, QR code will be available shortly...' : undefined,
+      message: status.status === 'connecting' ? 'Connection started, QR code will be available shortly...' : 
+               status.status === 'qr_required' ? 'QR code generated successfully!' : undefined,
+      timestamp: new Date().toISOString(),
     });
     
   } catch (error) {
@@ -97,6 +102,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to regenerate QR code',
+      timestamp: new Date().toISOString(),
     }, { status: 500 });
   }
 }

@@ -6,6 +6,7 @@ import {
   WASocket,
   BaileysEventMap,
   proto,
+  Browsers,
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import QRCode from 'qrcode';
@@ -146,12 +147,15 @@ export class BaileysManager extends EventEmitter {
       this.socket = makeWASocket({
         auth: state,
         printQRInTerminal: false,
-        browser: ['WhatsApp Status Handler', 'Chrome', '1.0.0'],
+        // Use desktop browser for better message history and features
+        browser: Browsers.macOS('WhatsApp Status Handler'),
         connectTimeoutMs: 30000,
         defaultQueryTimeoutMs: 60000,
         keepAliveIntervalMs: 30000,
         markOnlineOnConnect: true,
         generateHighQualityLinkPreview: true,
+        // Enable full history sync for better connection
+        syncFullHistory: true,
         options: {
           // WebSocket configuration to prevent buffer utility errors
           perMessageDeflate: false,
@@ -196,11 +200,14 @@ export class BaileysManager extends EventEmitter {
       this.socket = makeWASocket({
         auth: state,
         printQRInTerminal: false,
-        browser: ['WhatsApp Status Handler', 'Chrome', '1.0.0'],
+        // Use desktop browser for better message history and features
+        browser: Browsers.macOS('WhatsApp Status Handler'),
         connectTimeoutMs: 30000,
         defaultQueryTimeoutMs: 60000,
         keepAliveIntervalMs: 30000,
         markOnlineOnConnect: true,
+        // Enable full history sync for better connection
+        syncFullHistory: true,
         options: {
           // WebSocket configuration to prevent buffer utility errors
           perMessageDeflate: false,
@@ -277,6 +284,9 @@ export class BaileysManager extends EventEmitter {
             });
           }
         }
+
+        // Send "Connected to Bot" message to the connected number
+        await this.sendConnectionConfirmationMessage();
       }
     });
 
@@ -479,6 +489,53 @@ export class BaileysManager extends EventEmitter {
     } catch (error) {
       console.error('Failed to send media to status:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Send connection confirmation message to the connected WhatsApp number
+   */
+  private async sendConnectionConfirmationMessage(): Promise<void> {
+    if (!this.socket || this.connectionStatus.status !== 'connected') {
+      console.warn('Cannot send connection message: WhatsApp not connected');
+      return;
+    }
+
+    try {
+      // Get the connected user's number
+      const userJid = this.socket.user?.id;
+      if (!userJid) {
+        console.warn('Cannot send connection message: User JID not available');
+        return;
+      }
+
+      // Send a text message to the user confirming the connection
+      const confirmationMessage = {
+        text: '🤖 *Connected to Bot*\n\nYour WhatsApp Status Handler is now connected and ready to use!\n\n✅ You can now send media to your status\n✅ Upload files through the web interface\n✅ Manage your WhatsApp content easily\n\nEnjoy using the WhatsApp Status Handler! 🚀'
+      };
+
+      const result = await this.socket.sendMessage(userJid, confirmationMessage);
+      console.log('Connection confirmation message sent successfully:', result?.key?.id);
+      
+      // Emit event for logging/tracking purposes
+      this.emit('connection_message_sent', {
+        messageId: result?.key?.id,
+        timestamp: new Date().toISOString(),
+        userJid
+      });
+
+    } catch (error) {
+      console.error('Failed to send connection confirmation message:', error);
+      // Don't throw error here to avoid disrupting the connection process
+      errorHandler.handleError(error, {
+        category: ErrorCategory.WHATSAPP,
+        severity: 'low',
+        context: { 
+          component: 'BaileysManager', 
+          action: 'send_connection_confirmation',
+          sessionId: this.sessionId
+        }
+      });
     }
   }
 
