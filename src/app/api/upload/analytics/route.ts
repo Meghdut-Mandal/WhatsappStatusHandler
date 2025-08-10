@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const queueStatus = uploader.getQueueStatus();
     const processingStatus = processor.getQueueStatus();
 
-    let response: any = {
+    const response: any = {
       success: true,
       period,
       timestamp: new Date().toISOString(),

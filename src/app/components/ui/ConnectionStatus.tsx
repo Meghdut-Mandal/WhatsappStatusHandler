@@ -15,8 +15,15 @@ interface ConnectionStatusProps {
 
 interface StatusData {
   status: ConnectionStatusType;
-  session?: any;
-  whatsappUser?: any;
+  session?: {
+    id: string;
+    deviceName: string;
+    isActive: boolean;
+  };
+  whatsappUser?: {
+    name: string;
+    id: string;
+  };
   timestamp?: string;
 }
 

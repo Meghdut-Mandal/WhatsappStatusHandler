@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { FileUpload, FileWithPreview } from './FileUpload';
 import { MediaPreview } from './MediaPreview';
 import { UploadProgress, UploadProgressItem } from './UploadProgress';
@@ -8,15 +8,9 @@ import { Button } from './Button';
 import { 
   Grid, 
   List, 
-  Filter, 
   Search, 
   Send,
-  Trash2,
-  Download,
-  MoreHorizontal,
-  Settings,
-  RefreshCw,
-  Upload as UploadIcon
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 

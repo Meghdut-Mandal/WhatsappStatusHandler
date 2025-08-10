@@ -17,7 +17,35 @@ export async function GET(request: NextRequest) {
     const format = searchParams.get('format') || 'json'; // json, zip
     const sessionId = searchParams.get('sessionId');
 
-    const exportData: any = {
+    interface ExportData {
+      exportDate: string;
+      version: string;
+      dataType: string;
+      settings?: any;
+      sessions?: Array<{
+        id: string;
+        deviceName: string;
+        createdAt: Date;
+        lastSeenAt: Date | null;
+        isActive: boolean;
+      }>;
+      sendHistory?: Array<{
+        id: string;
+        targetType: string;
+        targetIdentifier: string;
+        files: string[];
+        status: string;
+        createdAt: Date;
+        completedAt: Date | null;
+      }>;
+      contacts?: {
+        favorites: any[];
+        broadcastLists: any[];
+        note: string;
+      };
+    }
+
+    const exportData: ExportData = {
       exportDate: new Date().toISOString(),
       version: '1.0',
       dataType,
@@ -30,7 +58,7 @@ export async function GET(request: NextRequest) {
         const settingsData = await fs.readFile(settingsPath, 'utf8');
         exportData.settings = JSON.parse(settingsData);
       } catch (error) {
-        exportData.settings = null;
+        // Settings not available, skip
       }
     }
 
@@ -146,7 +174,7 @@ export async function POST(request: NextRequest) {
     const fileContent = await file.arrayBuffer();
     const buffer = Buffer.from(fileContent);
     
-    let importData: any;
+    let importData: ExportData;
     
     // Handle different file types
     if (file.name.endsWith('.zip')) {
@@ -403,7 +431,15 @@ export async function DELETE(request: NextRequest) {
 /**
  * Helper functions
  */
-function convertHistoryToCSV(history: any[]): string {
+function convertHistoryToCSV(history: Array<{
+  id: string;
+  targetType: string;
+  targetIdentifier: string;
+  files: string[];
+  status: string;
+  createdAt: Date;
+  completedAt: Date | null;
+}>): string {
   if (history.length === 0) return 'No data';
   
   const headers = ['ID', 'Target Type', 'Target ID', 'Files', 'Status', 'Created At', 'Completed At'];
@@ -420,7 +456,7 @@ function convertHistoryToCSV(history: any[]): string {
   return [headers, ...rows].map(row => row.map(field => `"${field}"`).join(',')).join('\n');
 }
 
-function generateExportReadme(exportData: any): string {
+function generateExportReadme(exportData: ExportData): string {
   return `
 WhatsApp Status Handler - Data Export
 =====================================

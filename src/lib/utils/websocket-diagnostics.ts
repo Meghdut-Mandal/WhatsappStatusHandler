@@ -179,9 +179,9 @@ export class WebSocketDiagnostics {
 
       // Check global availability
       if (typeof global !== 'undefined') {
-        // @ts-ignore
+        // @ts-expect-error - Accessing global properties for WebSocket utilities
         const globalBufferUtil = global.bufferUtil;
-        // @ts-ignore
+        // @ts-expect-error - Accessing global properties for WebSocket utilities
         const globalUtf8Validate = global.utf8Validate;
         
         if (globalBufferUtil && globalUtf8Validate) {

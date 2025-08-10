@@ -6,6 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { backupManager } from '@/lib/backup/BackupManager';
 import { errorHandler, ErrorCategory, ErrorSeverity } from '@/lib/errors/ErrorHandler';
+import path from 'path';
+import { promises as fs } from 'fs';
 
 /**
  * POST /api/backup/restore - Restore from backup file
@@ -42,11 +44,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Save uploaded file temporarily
-    const tempDir = require('path').join(process.cwd(), 'tmp');
-    const tempFilePath = require('path').join(tempDir, `restore_${Date.now()}_${file.name}`);
+    const tempDir = path.join(process.cwd(), 'tmp');
+    const tempFilePath = path.join(tempDir, `restore_${Date.now()}_${file.name}`);
     
     const fileBuffer = Buffer.from(await file.arrayBuffer());
-    await require('fs').promises.writeFile(tempFilePath, fileBuffer);
+    await fs.writeFile(tempFilePath, fileBuffer);
 
     try {
       // Verify backup before restoring
@@ -67,7 +69,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Clean up temp file
-      await require('fs').promises.unlink(tempFilePath).catch(() => {});
+      await fs.unlink(tempFilePath).catch(() => {});
 
       return NextResponse.json({
         success: result.success,
@@ -77,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     } catch (restoreError) {
       // Clean up temp file on error
-      await require('fs').promises.unlink(tempFilePath).catch(() => {});
+      await fs.unlink(tempFilePath).catch(() => {});
       throw restoreError;
     }
 

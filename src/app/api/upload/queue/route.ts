@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     const queueStatus = uploader.getQueueStatus();
     const analytics = uploader.getAnalytics();
 
-    let response: any = {
+    const response: any = {
       success: true,
       queue: queueStatus,
       analytics,

@@ -30,12 +30,14 @@ export function ensureWebSocketReady(): boolean {
 // Ensure buffer utilities are available globally for ws library
 if (typeof global !== 'undefined') {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const bufferUtil = require('bufferutil');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const utf8Validate = require('utf-8-validate');
     
-    // @ts-ignore
+    // @ts-expect-error - Adding to global for ws library compatibility
     global.bufferUtil = bufferUtil;
-    // @ts-ignore
+    // @ts-expect-error - Adding to global for ws library compatibility
     global.utf8Validate = utf8Validate;
     
     console.log('Native buffer utilities loaded successfully');

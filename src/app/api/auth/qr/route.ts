@@ -6,7 +6,7 @@ import '@/lib/init-websocket';
 /**
  * GET /api/auth/qr - Get current QR code for WhatsApp authentication
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const baileysManager = getBaileysManager();
     
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/auth/qr - Force regenerate QR code
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const baileysManager = getBaileysManager();
     

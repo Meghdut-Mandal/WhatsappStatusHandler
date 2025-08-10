@@ -154,7 +154,7 @@ export const FeedbackSystem: React.FC<FeedbackSystemProps> = ({
             Feedback Submitted!
           </h3>
           <p className="text-gray-600">
-            Thank you for helping us improve. We'll review your feedback and get back to you if needed.
+            Thank you for helping us improve. We&apos;ll review your feedback and get back to you if needed.
           </p>
         </div>
       </AccessibleModal>
@@ -272,7 +272,7 @@ export const FeedbackSystem: React.FC<FeedbackSystemProps> = ({
               {formData.type === 'bug' 
                 ? 'Include steps to reproduce the issue and what you expected to happen'
                 : formData.type === 'feature'
-                ? 'Describe the feature you\'d like and how it would help you'
+                ? 'Describe the feature you&apos;d like and how it would help you'
                 : 'Share your thoughts, suggestions, or experiences'}
             </p>
           </div>
@@ -397,7 +397,7 @@ export const QuickFeedback: React.FC<QuickFeedbackProps> = ({
     
     const message = type === 'thumbs-up' 
       ? 'Thank you for the positive feedback!'
-      : 'Thank you for the feedback. We\'ll work on improving this.';
+      : 'Thank you for the feedback. We&apos;ll work on improving this.';
     
     announceToScreenReader(message, 'polite');
   }, [onFeedback, context]);

@@ -331,7 +331,7 @@ export const createWhatsAppOnboardingSteps = (callbacks: {
           Connect WhatsApp
         </h3>
         <p className="text-gray-600 max-w-md mx-auto">
-          You'll need to scan a QR code with your phone to connect your WhatsApp account. 
+          You&apos;ll need to scan a QR code with your phone to connect your WhatsApp account. 
           Make sure WhatsApp is installed on your phone.
         </p>
         <AnimatedButton onClick={callbacks.onConnectWhatsApp} variant="primary">
@@ -406,7 +406,7 @@ export const createWhatsAppOnboardingSteps = (callbacks: {
           Congratulations!
         </h3>
         <p className="text-gray-600 max-w-md mx-auto">
-          You've completed the setup. You can now upload and send high-quality media to your 
+          You&apos;ve completed the setup. You can now upload and send high-quality media to your 
           WhatsApp Status anytime. Check out the settings for more customization options.
         </p>
         <div className="flex justify-center space-x-4">

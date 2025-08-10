@@ -26,8 +26,8 @@ export default function UploadPage() {
         return;
       }
 
-      let endpoint = `/api/send/${targetType}`;
-      let payload: any = {
+      const endpoint = `/api/send/${targetType}`;
+      const payload: any = {
         files: fileIds,
         caption: 'Sent from WhatsApp Status Handler',
       };

@@ -40,7 +40,32 @@ export async function GET(request: NextRequest) {
     const currentMetrics = systemMonitor.getCurrentMetrics();
     const alerts = systemMonitor.getAlerts();
 
-    const response: any = {
+    interface HealthResponse {
+      success: boolean;
+      timestamp: string;
+      status: string;
+      summary: {
+        overall: string;
+        activeAlerts: number;
+        healthChecks: number;
+        uptime: number;
+      };
+      details?: {
+        healthChecks: any[];
+        metrics: any;
+        alerts: any[];
+        system: {
+          nodeVersion: string;
+          platform: string;
+          arch: string;
+          pid: number;
+          memory: NodeJS.MemoryUsage;
+          uptime: number;
+        };
+      };
+    }
+
+    const response: HealthResponse = {
       success: true,
       timestamp: new Date().toISOString(),
       status: systemHealth.overall,

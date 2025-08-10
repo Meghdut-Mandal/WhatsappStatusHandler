@@ -152,7 +152,17 @@ export async function POST(request: NextRequest) {
 /**
  * Helper functions
  */
-function convertToPrometheusFormat(metrics: any[]): string {
+interface MetricData {
+  timestamp: string;
+  memory: { used: number; free: number; total: number; percentage: number };
+  cpu: { usage: number; loadAverage: number[] };
+  disk: { used: number; free: number; total: number; percentage: number };
+  connections: { whatsapp: boolean; database: boolean };
+  performance: { responseTime: number; throughput: number; errorRate: number };
+  uptime: number;
+}
+
+function convertToPrometheusFormat(metrics: MetricData[]): string {
   if (metrics.length === 0) return '';
 
   const latest = metrics[metrics.length - 1];
@@ -218,7 +228,7 @@ function convertToPrometheusFormat(metrics: any[]): string {
   return lines.join('\n') + '\n';
 }
 
-function generateSummary(metrics: any[]) {
+function generateSummary(metrics: MetricData[]) {
   if (metrics.length === 0) return null;
 
   const latest = metrics[metrics.length - 1];

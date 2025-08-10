@@ -49,17 +49,17 @@ try {
 export function initializeWebSocketPolyfills(): void {
   // Ensure global availability of buffer utilities
   if (typeof global !== 'undefined') {
-    // @ts-ignore
+    // @ts-expect-error - Adding to global for WebSocket compatibility
     global.bufferUtil = bufferUtil;
-    // @ts-ignore
+    // @ts-expect-error - Adding to global for WebSocket compatibility
     global.utf8Validate = utf8Validate;
   }
 
   // Also ensure they're available on the process object
   if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-    // @ts-ignore
+    // @ts-expect-error - Adding to process for WebSocket compatibility
     process.bufferUtil = bufferUtil;
-    // @ts-ignore
+    // @ts-expect-error - Adding to process for WebSocket compatibility
     process.utf8Validate = utf8Validate;
   }
 }

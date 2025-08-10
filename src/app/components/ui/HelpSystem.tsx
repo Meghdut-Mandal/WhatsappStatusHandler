@@ -205,7 +205,7 @@ export const HelpSystem: React.FC<HelpSystemProps> = ({
 
               {filteredCategories.length === 0 && searchQuery && (
                 <div className="text-center py-8 text-gray-500">
-                  <p>No articles found for "{searchQuery}"</p>
+                  <p>No articles found for &quot;{searchQuery}&quot;</p>
                   <button
                     onClick={() => setSearchQuery('')}
                     className="text-blue-600 hover:text-blue-800 text-sm mt-2 focus:outline-none focus:underline"
@@ -323,11 +323,11 @@ export const createWhatsAppHelpContent = (): HelpCategory[] => [
           <div>
             <h3>Setting up WhatsApp Status Handler</h3>
             <ol>
-              <li><strong>Connect your WhatsApp:</strong> Click the "Connect WhatsApp" button and scan the QR code with your phone.</li>
+              <li><strong>Connect your WhatsApp:</strong> Click the &quot;Connect WhatsApp&quot; button and scan the QR code with your phone.</li>
               <li><strong>Upload media:</strong> Drag and drop or select files to upload.</li>
               <li><strong>Send to Status:</strong> Choose your uploaded files and send them to your WhatsApp Status.</li>
             </ol>
-            <p>The app preserves original quality, so your photos and videos won't be compressed.</p>
+            <p>The app preserves original quality, so your photos and videos won&apos;t be compressed.</p>
           </div>
         ),
         category: 'getting-started',
@@ -344,7 +344,7 @@ export const createWhatsAppHelpContent = (): HelpCategory[] => [
             <p>To use this app, you need to connect your WhatsApp account:</p>
             <ol>
               <li>Make sure WhatsApp is installed on your phone</li>
-              <li>Click "Connect WhatsApp" in the app</li>
+              <li>Click &quot;Connect WhatsApp&quot; in the app</li>
               <li>A QR code will appear on your screen</li>
               <li>Open WhatsApp on your phone</li>
               <li>Go to Settings → Linked Devices → Link a Device</li>
@@ -415,8 +415,8 @@ export const createWhatsAppHelpContent = (): HelpCategory[] => [
         title: 'Connection Issues',
         content: (
           <div>
-            <h3>WhatsApp won't connect</h3>
-            <p>If you're having trouble connecting WhatsApp, try these steps:</p>
+            <h3>WhatsApp won&apos;t connect</h3>
+            <p>If you&apos;re having trouble connecting WhatsApp, try these steps:</p>
             <ol>
               <li><strong>Check your internet connection</strong> - Both your computer and phone need internet access</li>
               <li><strong>Refresh the QR code</strong> - Click the refresh button to generate a new QR code</li>
