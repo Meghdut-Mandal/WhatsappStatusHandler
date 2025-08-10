@@ -7,6 +7,34 @@ import { StreamingUploader } from '@/lib/uploader';
 // Initialize WebSocket polyfills early
 import '@/lib/init-websocket';
 
+interface ExportData {
+  exportDate: string;
+  version: string;
+  dataType: string;
+  settings?: any;
+  sessions?: Array<{
+    id: string;
+    deviceName: string;
+    createdAt: Date;
+    lastSeenAt: Date | null;
+    isActive: boolean;
+  }>;
+  sendHistory?: Array<{
+    id: string;
+    targetType: string;
+    targetIdentifier: string;
+    files: string[];
+    status: string;
+    createdAt: Date;
+    completedAt: Date | null;
+  }>;
+  contacts?: {
+    favorites: any[];
+    broadcastLists: any[];
+    note: string;
+  };
+}
+
 /**
  * GET /api/data - Export application data
  */
@@ -16,34 +44,6 @@ export async function GET(request: NextRequest) {
     const dataType = searchParams.get('type') || 'all'; // all, settings, history, contacts, sessions
     const format = searchParams.get('format') || 'json'; // json, zip
     const sessionId = searchParams.get('sessionId');
-
-    interface ExportData {
-      exportDate: string;
-      version: string;
-      dataType: string;
-      settings?: any;
-      sessions?: Array<{
-        id: string;
-        deviceName: string;
-        createdAt: Date;
-        lastSeenAt: Date | null;
-        isActive: boolean;
-      }>;
-      sendHistory?: Array<{
-        id: string;
-        targetType: string;
-        targetIdentifier: string;
-        files: string[];
-        status: string;
-        createdAt: Date;
-        completedAt: Date | null;
-      }>;
-      contacts?: {
-        favorites: any[];
-        broadcastLists: any[];
-        note: string;
-      };
-    }
 
     const exportData: ExportData = {
       exportDate: new Date().toISOString(),
@@ -88,8 +88,8 @@ export async function GET(request: NextRequest) {
         exportData.sendHistory = history.map(item => ({
           id: item.id,
           targetType: item.targetType,
-          targetIdentifier: item.targetIdentifier,
-          files: item.files,
+          targetIdentifier: item.targetIdentifier || '',
+          files: Array.isArray(item.files) ? item.files : JSON.parse(item.files || '[]'),
           status: item.status,
           createdAt: item.createdAt,
           completedAt: item.completedAt,
@@ -264,10 +264,10 @@ export async function POST(request: NextRequest) {
         try {
           await SendHistoryService.create({
             sessionId: targetSession.id,
-            targetType: historyItem.targetType,
+            targetType: historyItem.targetType as 'status' | 'contact' | 'group',
             targetIdentifier: historyItem.targetIdentifier,
             files: historyItem.files,
-            status: historyItem.status,
+            status: historyItem.status as 'pending' | 'uploading' | 'sending' | 'completed' | 'failed',
           });
           results.sendHistory++;
         } catch (error) {
