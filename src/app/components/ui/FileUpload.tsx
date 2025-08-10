@@ -98,12 +98,12 @@ export function FileUpload({
       if (error) {
         newErrors.push(error);
       } else {
-        const fileWithPreview: FileWithPreview = {
-          ...file,
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          preview: generatePreview(file),
-          uploadStatus: 'pending',
-        };
+        // Create FileWithPreview by adding properties to the original file
+        const fileWithPreview = file as FileWithPreview;
+        fileWithPreview.id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        fileWithPreview.preview = generatePreview(file);
+        fileWithPreview.uploadStatus = 'pending';
+        
         newFiles.push(fileWithPreview);
       }
     });
@@ -329,9 +329,16 @@ export function FileUpload({
 
 // Helper function to format file size
 function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
+  // Handle undefined, null, NaN, or negative values
+  if (!bytes || bytes <= 0 || isNaN(bytes)) return '0 Bytes';
+  
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  
+  // Ensure i is within bounds
+  const sizeIndex = Math.min(i, sizes.length - 1);
+  const formattedSize = parseFloat((bytes / Math.pow(k, sizeIndex)).toFixed(2));
+  
+  return `${formattedSize} ${sizes[sizeIndex]}`;
 }

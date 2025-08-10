@@ -47,41 +47,46 @@ export function MediaPreview({
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Early return if file is not provided or missing required properties
-  if (!file || !file.type) {
+  if (!file) {
     return (
       <div className={cn('w-full h-48 bg-gray-100 dark:bg-gray-800 rounded-lg flex flex-col items-center justify-center text-gray-500 dark:text-gray-400', className)}>
         <File className="w-8 h-8" />
-        <p className="mt-2 text-sm text-center px-2">Invalid file</p>
+        <p className="mt-2 text-sm text-center px-2">No file selected</p>
       </div>
     );
   }
 
+  // Handle case where file.type might be empty or undefined
+  const fileType = file.type || '';
+  const fileName = file.name || 'Unknown file';
+  const fileSize = file.size || 0;
+
   const handlePreviewClick = () => {
-    if (file.type?.startsWith('image/') || file.type?.startsWith('video/')) {
+    if (fileType.startsWith('image/') || fileType.startsWith('video/')) {
       setIsModalOpen(true);
     }
   };
 
   const getFileIcon = () => {
-    if (!file.type) return <File className="w-8 h-8" />;
-    if (file.type.startsWith('image/')) return <ImageIcon className="w-8 h-8" />;
-    if (file.type.startsWith('video/')) return <VideoIcon className="w-8 h-8" />;
-    if (file.type.startsWith('audio/')) return <Music className="w-8 h-8" />;
-    if (file.type === 'application/pdf') return <FileText className="w-8 h-8" />;
+    if (!fileType) return <File className="w-8 h-8" />;
+    if (fileType.startsWith('image/')) return <ImageIcon className="w-8 h-8" />;
+    if (fileType.startsWith('video/')) return <VideoIcon className="w-8 h-8" />;
+    if (fileType.startsWith('audio/')) return <Music className="w-8 h-8" />;
+    if (fileType === 'application/pdf') return <FileText className="w-8 h-8" />;
     return <File className="w-8 h-8" />;
   };
 
   return (
     <>
       <div className={cn('relative group', className)}>
-        {file.type?.startsWith('image/') && file.preview ? (
+        {fileType.startsWith('image/') && file.preview ? (
           <div 
             className="relative cursor-pointer overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
             onClick={handlePreviewClick}
           >
             <img
               src={file.preview}
-              alt={file.name || 'Unknown file'}
+              alt={fileName}
               className="w-full h-48 object-cover transition-transform group-hover:scale-105"
             />
             {showControls && (
@@ -90,7 +95,7 @@ export function MediaPreview({
               </div>
             )}
           </div>
-        ) : file.type?.startsWith('video/') && file.preview ? (
+        ) : fileType.startsWith('video/') && file.preview ? (
           <div 
             className="relative cursor-pointer overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
             onClick={handlePreviewClick}
@@ -109,8 +114,8 @@ export function MediaPreview({
         ) : (
           <div className="w-full h-48 bg-gray-100 dark:bg-gray-800 rounded-lg flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
             {getFileIcon()}
-            <p className="mt-2 text-sm text-center px-2 truncate w-full">{file.name || 'Unknown file'}</p>
-            <p className="text-xs text-gray-400">{formatFileSize(file.size || 0)}</p>
+            <p className="mt-2 text-sm text-center px-2 truncate w-full">{fileName}</p>
+            <p className="text-xs text-gray-400">{formatFileSize(fileSize)}</p>
           </div>
         )}
 
@@ -138,7 +143,9 @@ export function MediaPreview({
 }
 
 function MediaModal({ file, isOpen, onClose }: MediaModalProps) {
-  if (!isOpen || !file || !file.type) return null;
+  if (!isOpen || !file) return null;
+  
+  const fileType = file.type || '';
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
@@ -152,9 +159,9 @@ function MediaModal({ file, isOpen, onClose }: MediaModalProps) {
         </button>
 
         {/* Content */}
-        {file.type?.startsWith('image/') ? (
+        {fileType.startsWith('image/') ? (
           <ImageViewer file={file} />
-        ) : file.type?.startsWith('video/') ? (
+        ) : fileType.startsWith('video/') ? (
           <VideoPlayer file={file} />
         ) : null}
       </div>
@@ -485,9 +492,16 @@ function VideoPlayer({ file }: { file: FileWithPreview }) {
 }
 
 function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
+  // Handle undefined, null, NaN, or negative values
+  if (!bytes || bytes <= 0 || isNaN(bytes)) return '0 Bytes';
+  
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  
+  // Ensure i is within bounds
+  const sizeIndex = Math.min(i, sizes.length - 1);
+  const formattedSize = parseFloat((bytes / Math.pow(k, sizeIndex)).toFixed(2));
+  
+  return `${formattedSize} ${sizes[sizeIndex]}`;
 }

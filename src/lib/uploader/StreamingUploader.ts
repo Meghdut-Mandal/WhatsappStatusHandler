@@ -59,7 +59,152 @@ export class StreamingUploader {
   }
 
   /**
-   * Process streaming upload from request
+   * Process streaming upload from Next.js request
+   */
+  static async processUploadFromNextJS(
+    request: Request,
+    options: UploadOptions = {}
+  ): Promise<UploadProgress[]> {
+    await this.initialize();
+    
+    const uploads: UploadProgress[] = [];
+    const validation = {
+      maxSize: options.validation?.maxSize || this.DEFAULT_MAX_SIZE,
+      allowedMimeTypes: options.validation?.allowedMimeTypes || this.DEFAULT_ALLOWED_MIMES,
+      allowedExtensions: options.validation?.allowedExtensions || [],
+    };
+
+    try {
+      // Parse FormData from Next.js request
+      const formData = await request.formData();
+      const files = formData.getAll('files') as File[];
+
+      for (const file of files) {
+        const uploadId = crypto.randomUUID();
+        const sanitizedFilename = this.sanitizeFilename(file.name);
+        const fileExtension = path.extname(sanitizedFilename);
+        const uniqueFilename = `${uploadId}_${sanitizedFilename}`;
+        const storagePath = path.join(this.UPLOAD_DIR, uniqueFilename);
+
+        // Create upload progress tracker
+        const progress: UploadProgress = {
+          id: uploadId,
+          filename: uniqueFilename,
+          originalName: file.name,
+          mimetype: file.type,
+          size: file.size,
+          uploaded: 0,
+          status: 'uploading',
+          startTime: Date.now(),
+          storagePath,
+        };
+
+        // Validate file type
+        if (!this.validateMimeType(file.type, validation.allowedMimeTypes)) {
+          progress.status = 'error';
+          progress.error = `File type '${file.type}' is not allowed`;
+          progress.endTime = Date.now();
+          uploads.push(progress);
+          options.onError?.(progress);
+          continue;
+        }
+
+        // Validate file extension if specified
+        if (validation.allowedExtensions.length > 0 && 
+            !validation.allowedExtensions.includes(fileExtension.toLowerCase())) {
+          progress.status = 'error';
+          progress.error = `File extension '${fileExtension}' is not allowed`;
+          progress.endTime = Date.now();
+          uploads.push(progress);
+          options.onError?.(progress);
+          continue;
+        }
+
+        // Validate file size
+        if (file.size > validation.maxSize) {
+          progress.status = 'error';
+          progress.error = `File size exceeds limit of ${validation.maxSize} bytes`;
+          progress.endTime = Date.now();
+          uploads.push(progress);
+          options.onError?.(progress);
+          continue;
+        }
+
+        this.uploads.set(uploadId, progress);
+        uploads.push(progress);
+
+        try {
+          const writeStream = createWriteStream(storagePath);
+          const hash = crypto.createHash('sha256');
+          let uploadedBytes = 0;
+
+          // Convert File to stream
+          const arrayBuffer = await file.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          
+          // Update progress
+          progress.uploaded = buffer.length;
+          progress.size = file.size;
+          hash.update(buffer);
+          options.onProgress?.(progress);
+
+          // Write file to disk
+          await pipeline(
+            async function* () {
+              yield buffer;
+            }(),
+            writeStream
+          );
+
+          // Get file stats and finalize
+          const stats = await fs.stat(storagePath);
+          const sha256Hash = hash.digest('hex');
+
+          progress.size = stats.size;
+          progress.uploaded = stats.size;
+          progress.status = 'completed';
+          progress.endTime = Date.now();
+
+          // Save metadata to database
+          const mediaMeta = await MediaMetaService.create({
+            filename: uniqueFilename,
+            originalName: file.name,
+            mimetype: file.type,
+            sizeBytes: stats.size,
+            storagePath,
+            sha256: sha256Hash,
+            isTemporary: true,
+          });
+
+          progress.mediaMetaId = mediaMeta.id;
+          this.uploads.set(uploadId, progress);
+          options.onComplete?.(progress);
+
+        } catch (error) {
+          progress.status = 'error';
+          progress.error = error instanceof Error ? error.message : 'Upload failed';
+          progress.endTime = Date.now();
+          this.uploads.set(uploadId, progress);
+          options.onError?.(progress);
+
+          // Clean up partial file
+          try {
+            await fs.unlink(storagePath);
+          } catch (cleanupError) {
+            console.error('Failed to cleanup partial file:', cleanupError);
+          }
+        }
+      }
+
+      return uploads;
+    } catch (error) {
+      console.error('Upload processing error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process streaming upload from request (legacy method for Node.js IncomingMessage)
    */
   static async processUpload(
     req: IncomingMessage,

@@ -16,37 +16,23 @@ export async function POST(request: NextRequest) {
       ...(allowedTypes && { allowedMimeTypes: allowedTypes.split(',') }),
     };
 
-    // Process the upload using form data
-    const formData = await request.formData();
-    const files = formData.getAll('files') as File[];
-    
-    const uploads: any[] = [];
-    
-    for (const file of files) {
-      try {
-        // Process each file individually
-        const uploadResult = {
-          id: `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          originalName: file.name,
-          size: file.size,
-          type: file.type,
-          status: 'completed' as const,
-          uploadedBytes: file.size,
-          mediaMetaId: `media_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        };
-        
-        uploads.push(uploadResult);
-      } catch (error) {
-        uploads.push({
-          id: `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          originalName: file.name,
-          size: file.size,
-          type: file.type,
-          status: 'error' as const,
-          error: error instanceof Error ? error.message : 'Upload failed',
-        });
+    // Use StreamingUploader to process the upload
+    const uploads = await StreamingUploader.processUploadFromNextJS(
+      request,
+      {
+        validation: validationOptions,
+        onProgress: (progress) => {
+          // Progress updates would be handled via WebSocket or SSE in a real implementation
+          console.log(`Upload progress: ${progress.originalName} - ${progress.uploaded}/${progress.size} bytes`);
+        },
+        onComplete: (progress) => {
+          console.log(`Upload completed: ${progress.originalName}`);
+        },
+        onError: (progress) => {
+          console.error(`Upload error: ${progress.originalName} - ${progress.error}`);
+        },
       }
-    }
+    );
 
     // Check if any uploads failed
     const hasErrors = uploads.some(upload => upload.status === 'error');

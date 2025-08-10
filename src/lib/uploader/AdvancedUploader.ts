@@ -2,6 +2,7 @@ import { StreamingUploader, UploadProgress } from './StreamingUploader';
 import { EventEmitter } from 'events';
 import { promises as fs } from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 
 export interface ChunkUploadOptions {
   chunkSize?: number; // Default 1MB chunks
