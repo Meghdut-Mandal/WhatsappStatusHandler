@@ -45,7 +45,7 @@ next-env.d.ts
 /data/*.sqlite*
 /data/*.db*
 /data/*.log
-/data/sessions/
+/data/auth_sessions/
 /data/auth_info_baileys/
 
 # Temporary upload files
