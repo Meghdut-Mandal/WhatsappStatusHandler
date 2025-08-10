@@ -96,7 +96,6 @@ export const SettingsInterface: React.FC<SettingsInterfaceProps> = ({
     </div>
   );
 };
-
 // General Settings Component
 export interface GeneralSettingsProps {
   settings: {
@@ -577,3 +576,4 @@ export const SessionManagement: React.FC<SessionManagementProps> = ({
     </div>
   );
 };
+

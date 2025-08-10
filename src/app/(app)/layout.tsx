@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Header, Sidebar, PageWrapper } from '../components/layout';
+import { Header, Sidebar } from '../components/layout';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 
-export default function DashboardLayout({
+export default function AppLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -13,7 +13,7 @@ export default function DashboardLayout({
 
   return (
     <ErrorBoundary>
-      <PageWrapper>
+      <div className="min-h-screen bg-gray-50">
         <div className="flex h-screen overflow-hidden">
           <Sidebar 
             isOpen={sidebarOpen}
@@ -31,7 +31,7 @@ export default function DashboardLayout({
             </div>
           </div>
         </div>
-      </PageWrapper>
+      </div>
     </ErrorBoundary>
   );
 }

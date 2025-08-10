@@ -44,15 +44,13 @@ const nextConfig: NextConfig = {
     return config;
   },
   
-  // Experimental features for better Node.js compatibility
-  experimental: {
-    serverComponentsExternalPackages: [
-      '@whiskeysockets/baileys',
-      'ws',
-      'bufferutil',
-      'utf-8-validate',
-    ],
-  },
+  // Server external packages for better Node.js compatibility
+  serverExternalPackages: [
+    '@whiskeysockets/baileys',
+    'ws',
+    'bufferutil',
+    'utf-8-validate',
+  ],
 };
 
 export default nextConfig;

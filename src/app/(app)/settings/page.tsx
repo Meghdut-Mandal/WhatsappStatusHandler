@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { MainContent } from '../components/layout/MainContent';
+import { MainContent } from '../../components/layout/MainContent';
 import { 
   SettingsInterface, 
   GeneralSettings, 
@@ -9,7 +9,7 @@ import {
   SessionManagement,
   type SettingsSection, 
   type SessionInfo 
-} from '../components/ui';
+} from '../../components/ui';
 
 interface AppSettings {
   general: {

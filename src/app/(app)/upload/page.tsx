@@ -27,7 +27,7 @@ export default function UploadPage() {
       }
 
       const endpoint = `/api/send/${targetType}`;
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         files: fileIds,
         caption: 'Sent from WhatsApp Status Handler',
       };
@@ -83,7 +83,7 @@ export default function UploadPage() {
                   name="target"
                   value="status"
                   checked={sendTarget.type === 'status'}
-                  onChange={(e) => setSendTarget({ type: 'status' })}
+                  onChange={() => setSendTarget({ type: 'status' })}
                   className="mr-2"
                 />
                 WhatsApp Status
@@ -94,7 +94,7 @@ export default function UploadPage() {
                   name="target"
                   value="contact"
                   checked={sendTarget.type === 'contact'}
-                  onChange={(e) => setSendTarget({ type: 'contact' })}
+                  onChange={() => setSendTarget({ type: 'contact' })}
                   className="mr-2"
                 />
                 Contact
@@ -105,7 +105,7 @@ export default function UploadPage() {
                   name="target"
                   value="group"
                   checked={sendTarget.type === 'group'}
-                  onChange={(e) => setSendTarget({ type: 'group' })}
+                  onChange={() => setSendTarget({ type: 'group' })}
                   className="mr-2"
                 />
                 Group
@@ -115,7 +115,7 @@ export default function UploadPage() {
 
           {/* File Manager */}
           <FileManager 
-            onFileSend={(files, targetType, targetId) => {
+            onFileSend={(files) => {
               handleFileSend(files, sendTarget.type, sendTarget.identifier);
             }}
           />

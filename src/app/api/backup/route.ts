@@ -30,7 +30,8 @@ export async function GET(request: NextRequest) {
 
       let verificationResult;
       if (verify) {
-        const backupPath = require('path').join(
+        const path = await import('path');
+        const backupPath = path.join(
           process.cwd(), 'data', 'backups', backup.filename
         );
         verificationResult = await backupManager.verifyBackup(backupPath);
