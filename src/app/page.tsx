@@ -15,7 +15,7 @@ interface DashboardStats {
   lastActivity?: string;
 }
 
-export default function DashboardPage() {
+export default function HomePage() {
   const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
