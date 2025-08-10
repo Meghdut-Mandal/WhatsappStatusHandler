@@ -153,31 +153,6 @@ export default function UploadPage() {
             </div>
           </div>
 
-          {/* API Endpoints */}
-          <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              Available API Endpoints
-            </h3>
-            <div className="grid md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Upload</h4>
-                <ul className="space-y-1 text-gray-600 dark:text-gray-400">
-                  <li><code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">POST /api/upload</code> - Stream file upload</li>
-                  <li><code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">GET /api/upload/progress/[id]</code> - Upload progress</li>
-                  <li><code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">POST /api/upload/cleanup</code> - Cleanup temp files</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Send</h4>
-                <ul className="space-y-1 text-gray-600 dark:text-gray-400">
-                  <li><code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">POST /api/send/status</code> - Send to Status</li>
-                  <li><code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">POST /api/send/contact</code> - Send to Contact</li>
-                  <li><code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">POST /api/send/group</code> - Send to Group</li>
-                  <li><code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">GET /api/send/history</code> - Send history</li>
-                </ul>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
