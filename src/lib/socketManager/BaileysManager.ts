@@ -256,12 +256,7 @@ export class BaileysManager extends EventEmitter {
         generateHighQualityLinkPreview: true,
         // Enable full history sync for better connection
         syncFullHistory: true,
-        options: {
-          // WebSocket configuration to prevent buffer utility errors
-          // perMessageDeflate: false, // Not supported in current Baileys version
-          // skipUTF8Validation: false, // Not supported in current Baileys version
-          maxPayload: 100 * 1024 * 1024, // 100MB
-        },
+        // Note: request/options tuning removed due to type incompatibility in current Baileys types
         // Additional socket configuration
         retryRequestDelayMs: 250,
         maxMsgRetryCount: 5,
@@ -313,12 +308,7 @@ export class BaileysManager extends EventEmitter {
         markOnlineOnConnect: true,
         // Enable full history sync for better connection
         syncFullHistory: true,
-        options: {
-          // WebSocket configuration to prevent buffer utility errors
-          // perMessageDeflate: false, // Not supported in current Baileys version
-          // skipUTF8Validation: false, // Not supported in current Baileys version
-          maxPayload: 100 * 1024 * 1024, // 100MB
-        },
+        // Note: request/options tuning removed due to type incompatibility in current Baileys types
         // Additional socket configuration
         retryRequestDelayMs: 250,
         maxMsgRetryCount: 5,
@@ -438,7 +428,7 @@ export class BaileysManager extends EventEmitter {
     });
 
     // Handle message updates (delivery, read status, etc.)
-    this.socket.ev.on('message.update', (update) => {
+    this.socket.ev.on('messages.update', (update) => {
       this.emit('message_update', update);
     });
 
@@ -461,11 +451,12 @@ export class BaileysManager extends EventEmitter {
     try {
       // Remove all listeners attached to the old socket
       try {
-        this.socket.ev.removeAllListeners();
+        // removeAllListeners may be typed to require an event; cast to any for full cleanup
+        (this.socket.ev as any).removeAllListeners();
       } catch {}
       // End the websocket if still open
-      if (this.socket.ws && this.socket.ws.readyState === 1) {
-        this.socket.end(undefined);
+      if (this.socket.ws && (this.socket.ws as any).readyState === 1) {
+        this.socket.end(new Boom('client requested close'));
       }
     } catch (err) {
       console.warn('Error tearing down existing socket:', err instanceof Error ? err.message : err);
@@ -542,7 +533,7 @@ export class BaileysManager extends EventEmitter {
    * Check if socket is connected and ready
    */
   isSocketReady(): boolean {
-    return !!(this.socket && this.socket.ws && this.socket.ws.readyState === 1);
+    return !!(this.socket && this.socket.ws && (this.socket.ws as any).readyState === 1);
   }
 
   /**
@@ -553,7 +544,7 @@ export class BaileysManager extends EventEmitter {
       return 'not_initialized';
     }
     
-    const readyState = this.socket.ws.readyState;
+    const readyState = (this.socket.ws as any).readyState;
     switch (readyState) {
       case 0: return 'connecting'; // WebSocket.CONNECTING
       case 1: return 'open';       // WebSocket.OPEN
@@ -574,8 +565,8 @@ export class BaileysManager extends EventEmitter {
       if (this.socket) {
         try {
           // Check if socket is still open before attempting to close
-          if (this.socket.ws && this.socket.ws.readyState === 1) { // WebSocket.OPEN = 1
-            this.socket.end(undefined);
+          if (this.socket.ws && (this.socket.ws as any).readyState === 1) { // WebSocket.OPEN = 1
+            this.socket.end(new Boom('client requested close'));
           } else {
             console.log('WebSocket already closed, skipping end() call');
           }
@@ -642,12 +633,11 @@ export class BaileysManager extends EventEmitter {
     }
 
     try {
-      const result = await this.socket.sendMessage('status@broadcast', {
-        [mimetype.startsWith('image/') ? 'image' : 'video']: mediaBuffer,
-        caption,
-        mimetype,
-      });
+      const content = mimetype.startsWith('image/')
+        ? ({ image: mediaBuffer, caption } as const)
+        : ({ video: mediaBuffer, caption } as const);
 
+      const result = await this.socket.sendMessage('status@broadcast', content);
       return result;
     } catch (error) {
       console.error('Failed to send media to status:', error);

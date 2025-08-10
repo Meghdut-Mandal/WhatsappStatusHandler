@@ -17,21 +17,8 @@ export interface ContactInfo extends Contact {
   isFavorite?: boolean; // Custom field for favorites
 }
 
-export interface GroupInfo extends GroupMetadata {
-  id: string;
-  subject: string;
-  owner?: string;
-  subjectOwner?: string;
-  subjectTime?: number;
-  creation?: number;
-  desc?: string;
-  descOwner?: string;
-  descId?: string;
-  restrict?: boolean;
-  announce?: boolean;
-  size?: number;
+export interface GroupInfo extends Omit<GroupMetadata, 'participants'> {
   participants: GroupParticipant[];
-  isMuted?: boolean;
   canSend?: boolean; // Permission to send messages
   profilePicUrl?: string;
 }
