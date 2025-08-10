@@ -2,10 +2,7 @@ import {
   makeWASocket,
   DisconnectReason,
   useMultiFileAuthState as getBaileysAuthState,
-  ConnectionState,
   WASocket,
-  BaileysEventMap,
-  proto,
   Browsers,
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
@@ -34,6 +31,10 @@ export class BaileysManager extends EventEmitter {
   private connectionStabilizer: ConnectionStabilizer;
   private sessionRecoveryAttempts = 0;
   private maxSessionRecoveryAttempts = 3;
+  // Prevent concurrent or duplicate inits/sockets
+  private isInitializing = false;
+  private initPromise: Promise<ConnectionStatus> | null = null;
+  private lastInitAt = 0;
 
   constructor() {
     super();
@@ -185,27 +186,47 @@ export class BaileysManager extends EventEmitter {
    * Initialize connection with existing session or create new one
    */
   async initialize(sessionId?: string): Promise<ConnectionStatus> {
-    try {
-      this.sessionId = sessionId || null;
-      
-      // If sessionId provided, try to restore session
-      if (this.sessionId) {
-        const session = await SessionService.getById(this.sessionId);
-        if (session && session.authBlob) {
-          await this.connectWithSession(session);
-          return this.connectionStatus;
-        }
-      }
+    // Debounce/serialize initialize calls to avoid duplicate sockets
+    if (this.isInitializing && this.initPromise) {
+      return this.initPromise;
+    }
 
-      // Create new connection
-      await this.createNewConnection();
-      return this.connectionStatus;
-    } catch (error) {
-      console.error('Failed to initialize Baileys:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      this.connectionStatus = { status: 'error', error: errorMessage };
+    // If a socket already exists and is connecting/open, just return status
+    const state = this.getSocketState();
+    if (state === 'open' || state === 'connecting') {
       return this.connectionStatus;
     }
+
+    this.isInitializing = true;
+    this.initPromise = (async () => {
+      try {
+        this.sessionId = sessionId || null;
+        this.lastInitAt = Date.now();
+
+        // If sessionId provided, try to restore session
+        if (this.sessionId) {
+          const session = await SessionService.getById(this.sessionId);
+          if (session && session.authBlob) {
+            await this.connectWithSession(session);
+            return this.connectionStatus;
+          }
+        }
+
+        // Create new connection
+        await this.createNewConnection();
+        return this.connectionStatus;
+      } catch (error) {
+        console.error('Failed to initialize Baileys:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        this.connectionStatus = { status: 'error', error: errorMessage };
+        return this.connectionStatus;
+      } finally {
+        this.isInitializing = false;
+        this.initPromise = null;
+      }
+    })();
+
+    return this.initPromise;
   }
 
   /**
@@ -215,6 +236,9 @@ export class BaileysManager extends EventEmitter {
     try {
       this.connectionStatus = { status: 'connecting' };
       this.emit('status_update', this.connectionStatus);
+
+      // Ensure any previous socket is fully torn down to avoid conflicts
+      await this.teardownExistingSocket();
 
       const sessionDir = path.join(this.authDir, 'temp_session');
       const authState = await getBaileysAuthState(sessionDir);
@@ -243,7 +267,7 @@ export class BaileysManager extends EventEmitter {
         maxMsgRetryCount: 5,
         fireInitQueries: true,
         emitOwnEvents: true,
-        getMessage: async (key) => {
+        getMessage: async (_key) => {
           // Return undefined to indicate message not found in cache
           return undefined;
         },
@@ -265,6 +289,9 @@ export class BaileysManager extends EventEmitter {
     try {
       this.connectionStatus = { status: 'connecting' };
       this.emit('status_update', this.connectionStatus);
+
+      // Ensure any previous socket is fully torn down to avoid conflicts
+      await this.teardownExistingSocket();
 
       // Restore auth state from database
       const sessionDir = path.join(this.authDir, session.id);
@@ -297,7 +324,7 @@ export class BaileysManager extends EventEmitter {
         maxMsgRetryCount: 5,
         fireInitQueries: true,
         emitOwnEvents: true,
-        getMessage: async (key) => {
+        getMessage: async (_key) => {
           // Return undefined to indicate message not found in cache
           return undefined;
         },
@@ -353,6 +380,11 @@ export class BaileysManager extends EventEmitter {
           } catch (e) {
             console.warn('Cleanup after loggedOut failed:', e);
           }
+        }
+
+        // If connection was replaced/conflict, don't auto-reconnect here; let user/API re-init
+        if (statusCode === DisconnectReason.connectionReplaced) {
+          console.warn('Connection replaced by another instance. Skipping auto-reconnect to avoid conflicts.');
         }
 
         this.connectionStatus = { status: 'disconnected' };
@@ -419,6 +451,27 @@ export class BaileysManager extends EventEmitter {
     this.socket.ev.on('groups.update', (groups) => {
       this.emit('groups_update', groups);
     });
+  }
+
+  /**
+   * Tear down any existing socket cleanly to prevent duplicate connections & listeners
+   */
+  private async teardownExistingSocket(): Promise<void> {
+    if (!this.socket) return;
+    try {
+      // Remove all listeners attached to the old socket
+      try {
+        this.socket.ev.removeAllListeners();
+      } catch {}
+      // End the websocket if still open
+      if (this.socket.ws && this.socket.ws.readyState === 1) {
+        this.socket.end(undefined);
+      }
+    } catch (err) {
+      console.warn('Error tearing down existing socket:', err instanceof Error ? err.message : err);
+    } finally {
+      this.socket = null;
+    }
   }
 
   /**
@@ -571,10 +624,7 @@ export class BaileysManager extends EventEmitter {
     }
     
     // Defer import to avoid circular deps and align with ESM
-    const create = async () => {
-      const mod = await import('./MessageSender');
-      return new mod.MessageSender(this.socket as WASocket);
-    };
+    // kept for backward compatibility; dynamic import suggested in error below
     // Return a proxy-like object to preserve existing callsites expecting instance
     // but encourage updating callsites to await this function instead if needed.
     // For now, we throw if someone tries to use without awaiting.
@@ -776,12 +826,15 @@ export class BaileysManager extends EventEmitter {
   }
 }
 
-// Singleton instance
-let baileysManager: BaileysManager | null = null;
+// Robust singleton across Next.js hot-reloads using globalThis
+declare global {
+  // eslint-disable-next-line no-var
+  var __BAILEYS_MANAGER__: BaileysManager | undefined;
+}
 
 export function getBaileysManager(): BaileysManager {
-  if (!baileysManager) {
-    baileysManager = new BaileysManager();
+  if (!globalThis.__BAILEYS_MANAGER__) {
+    globalThis.__BAILEYS_MANAGER__ = new BaileysManager();
   }
-  return baileysManager;
+  return globalThis.__BAILEYS_MANAGER__;
 }

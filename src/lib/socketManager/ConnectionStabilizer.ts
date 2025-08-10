@@ -225,6 +225,11 @@ export class ConnectionStabilizer extends EventEmitter {
       return false;
     }
 
+    // Do not auto-reconnect if connection was replaced (conflict). Avoid dueling sessions.
+    if (reason === DisconnectReason.connectionReplaced) {
+      return false;
+    }
+
     // Don't reconnect if banned
     if (reason === DisconnectReason.forbidden) {
       return false;
