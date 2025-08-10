@@ -21,11 +21,27 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Refresh connection status to keep Quick Actions in sync without manual reload
+  const refreshConnectionStatus = async () => {
+    try {
+      const statusResponse = await fetch('/api/auth/status', { cache: 'no-store' });
+      const statusData = await statusResponse.json();
+      setStats(prev => ({
+        totalSent: prev?.totalSent ?? 0,
+        successRate: prev?.successRate ?? 0,
+        activeSession: Boolean(statusData.success && statusData.status === 'connected'),
+        lastActivity: statusData.session?.lastSeenAt,
+      }));
+    } catch {
+      // Ignore transient errors during background refresh
+    }
+  };
+
   useEffect(() => {
     const fetchStats = async () => {
       try {
         // Check connection status
-        const statusResponse = await fetch('/api/auth/status');
+        const statusResponse = await fetch('/api/auth/status', { cache: 'no-store' });
         const statusData = await statusResponse.json();
         
         // For now, set mock stats - in Week 2 this will fetch real data
@@ -48,6 +64,22 @@ export default function HomePage() {
     };
 
     fetchStats();
+  }, []);
+
+  // Poll connection status until connected, so Quick Actions update automatically
+  useEffect(() => {
+    if (stats?.activeSession) return;
+    const intervalId = setInterval(refreshConnectionStatus, 3000);
+    return () => clearInterval(intervalId);
+  }, [stats?.activeSession]);
+
+  // Also refresh when the window regains focus (useful after returning from QR scan)
+  useEffect(() => {
+    const handleFocus = () => {
+      refreshConnectionStatus();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
   const handleConnectToWhatsApp = () => {
