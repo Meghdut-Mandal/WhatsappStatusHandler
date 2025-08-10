@@ -88,8 +88,14 @@ export class ErrorHandler extends EventEmitter {
       });
     });
 
-    // Handle process warnings
+    // Handle process warnings (but don't crash on deprecation warnings)
     process.on('warning', (warning) => {
+      // Skip deprecation warnings to avoid crashes
+      if (warning.name === 'DeprecationWarning') {
+        console.warn(`[DEPRECATION] ${warning.message}`);
+        return;
+      }
+      
       this.handleError(new Error(warning.message), {
         category: ErrorCategory.SYSTEM,
         severity: ErrorSeverity.LOW,

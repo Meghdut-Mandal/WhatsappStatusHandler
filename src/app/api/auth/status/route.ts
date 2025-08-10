@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getBaileysManager } from '@/lib/socketManager';
 import { SessionService } from '@/lib/db';
+// Initialize WebSocket polyfills early
+import '@/lib/init-websocket';
 
 /**
  * GET /api/auth/status - Check WhatsApp connection status
@@ -8,7 +10,25 @@ import { SessionService } from '@/lib/db';
 export async function GET(request: NextRequest) {
   try {
     const baileysManager = getBaileysManager();
-    const connectionStatus = baileysManager.getConnectionStatus();
+    let connectionStatus = baileysManager.getConnectionStatus();
+    
+    // If not initialized yet, try to initialize connection
+    if (connectionStatus.status === 'disconnected') {
+      console.log('Connection not initialized, attempting to initialize...');
+      try {
+        // Check for existing active session first
+        const activeSession = await SessionService.getActive();
+        if (activeSession) {
+          await baileysManager.initialize(activeSession.id);
+        } else {
+          await baileysManager.initialize();
+        }
+        connectionStatus = baileysManager.getConnectionStatus();
+      } catch (initError) {
+        console.error('Failed to auto-initialize connection:', initError);
+        // Continue with current status
+      }
+    }
     
     // Get session info from database if connected
     let sessionInfo = null;

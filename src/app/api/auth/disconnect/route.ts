@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getBaileysManager } from '@/lib/socketManager';
 import { SessionService } from '@/lib/db';
+// Initialize WebSocket polyfills early
+import '@/lib/init-websocket';
 
 /**
  * POST /api/auth/disconnect - Disconnect WhatsApp session

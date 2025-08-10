@@ -1,23 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getBaileysManager } from '@/lib/socketManager';
+// Initialize WebSocket polyfills early
+import '@/lib/init-websocket';
 
 /**
- * GET /api/auth/qr - Generate QR code for WhatsApp authentication
+ * GET /api/auth/qr - Get current QR code for WhatsApp authentication
  */
 export async function GET(request: NextRequest) {
   try {
     const baileysManager = getBaileysManager();
     
-    // Initialize connection to get QR code
-    const status = await baileysManager.initialize();
-    
-    if (status.status === 'qr_required' && status.qrCode) {
-      return NextResponse.json({
-        success: true,
-        qrCode: status.qrCode,
-        status: status.status,
-      });
-    }
+    // Get current status and QR code
+    const status = baileysManager.getConnectionStatus();
+    const qrCode = baileysManager.getCurrentQRCode();
     
     if (status.status === 'connected') {
       return NextResponse.json({
@@ -28,23 +23,31 @@ export async function GET(request: NextRequest) {
       });
     }
     
+    if (status.status === 'qr_required' && qrCode) {
+      return NextResponse.json({
+        success: true,
+        qrCode: qrCode,
+        status: status.status,
+      });
+    }
+    
     if (status.status === 'error') {
       return NextResponse.json({
         success: false,
-        error: status.error || 'Failed to initialize connection',
+        error: status.error || 'Connection error occurred',
         status: status.status,
       }, { status: 500 });
     }
     
-    // Connection is in progress
+    // If no QR code available yet, return current status
     return NextResponse.json({
       success: true,
-      message: 'Connection in progress, please wait...',
+      message: 'Waiting for QR code generation...',
       status: status.status,
     });
     
   } catch (error) {
-    console.error('QR generation error:', error);
+    console.error('QR retrieval error:', error);
     return NextResponse.json({
       success: false,
       error: 'Internal server error',
@@ -59,25 +62,41 @@ export async function POST(request: NextRequest) {
   try {
     const baileysManager = getBaileysManager();
     
-    // Disconnect if already connected and force new connection
-    await baileysManager.disconnect();
+    // Check socket state before attempting disconnect
+    const socketState = baileysManager.getSocketState();
+    console.log('Current socket state before disconnect:', socketState);
     
-    // Wait a moment before reconnecting
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Only disconnect if socket exists and is not already closed
+    if (socketState !== 'not_initialized' && socketState !== 'closed') {
+      console.log('Disconnecting existing connection...');
+      await baileysManager.disconnect();
+      
+      // Wait for disconnect to complete
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    } else {
+      console.log('No active connection to disconnect');
+    }
     
-    const status = await baileysManager.initialize();
+    // Initialize new connection
+    console.log('Initializing new connection...');
+    await baileysManager.initialize();
+    
+    // Get the status after initialization
+    const status = baileysManager.getConnectionStatus();
+    const qrCode = baileysManager.getCurrentQRCode();
     
     return NextResponse.json({
       success: true,
       status: status.status,
-      qrCode: status.qrCode,
+      qrCode: qrCode,
+      message: status.status === 'connecting' ? 'Connection started, QR code will be available shortly...' : undefined,
     });
     
   } catch (error) {
     console.error('QR regeneration error:', error);
     return NextResponse.json({
       success: false,
-      error: 'Failed to regenerate QR code',
+      error: error instanceof Error ? error.message : 'Failed to regenerate QR code',
     }, { status: 500 });
   }
 }

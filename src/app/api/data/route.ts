@@ -4,6 +4,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import JSZip from 'jszip';
 import { StreamingUploader } from '@/lib/uploader';
+// Initialize WebSocket polyfills early
+import '@/lib/init-websocket';
 
 /**
  * GET /api/data - Export application data

@@ -15,6 +15,8 @@ import path from 'path';
 import fs from 'fs/promises';
 import { ConnectionStabilizer } from './ConnectionStabilizer';
 import { errorHandler, ErrorCategory } from '../errors/ErrorHandler';
+import { initializeWebSocketPolyfills, isWebSocketPolyfillReady } from '../utils/websocket-polyfill';
+import { logWebSocketFixTest } from '../utils/test-websocket-fix';
 
 export interface ConnectionStatus {
   status: 'disconnected' | 'connecting' | 'connected' | 'qr_required' | 'error';
@@ -34,6 +36,22 @@ export class BaileysManager extends EventEmitter {
 
   constructor() {
     super();
+    
+    // Initialize WebSocket polyfills before any socket operations
+    initializeWebSocketPolyfills();
+    
+    // Verify polyfills are ready
+    if (!isWebSocketPolyfillReady()) {
+      console.warn('WebSocket polyfills may not be fully initialized');
+    } else {
+      console.log('WebSocket polyfills initialized successfully in BaileysManager');
+    }
+    
+    // Run WebSocket fix test in development mode
+    if (process.env.NODE_ENV === 'development') {
+      logWebSocketFixTest();
+    }
+    
     this.authDir = path.join(process.cwd(), 'data', 'auth_sessions');
     this.connectionStabilizer = new ConnectionStabilizer();
     this.setupStabilizerEventHandlers();
@@ -97,12 +115,14 @@ export class BaileysManager extends EventEmitter {
       if (this.sessionId) {
         const session = await SessionService.getById(this.sessionId);
         if (session && session.authBlob) {
-          return this.connectWithSession(session);
+          await this.connectWithSession(session);
+          return this.connectionStatus;
         }
       }
 
       // Create new connection
-      return this.createNewConnection();
+      await this.createNewConnection();
+      return this.connectionStatus;
     } catch (error) {
       console.error('Failed to initialize Baileys:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -114,7 +134,7 @@ export class BaileysManager extends EventEmitter {
   /**
    * Create a new WhatsApp connection
    */
-  private async createNewConnection(): Promise<ConnectionStatus> {
+  private async createNewConnection(): Promise<void> {
     try {
       this.connectionStatus = { status: 'connecting' };
       this.emit('status_update', this.connectionStatus);
@@ -132,23 +152,36 @@ export class BaileysManager extends EventEmitter {
         keepAliveIntervalMs: 30000,
         markOnlineOnConnect: true,
         generateHighQualityLinkPreview: true,
+        options: {
+          // WebSocket configuration to prevent buffer utility errors
+          perMessageDeflate: false,
+          skipUTF8Validation: false,
+          maxPayload: 100 * 1024 * 1024, // 100MB
+        },
+        // Additional socket configuration
+        retryRequestDelayMs: 250,
+        maxMsgRetryCount: 5,
+        fireInitQueries: true,
+        emitOwnEvents: true,
+        getMessage: async (key) => {
+          // Return undefined to indicate message not found in cache
+          return undefined;
+        },
       });
 
       this.setupEventHandlers(saveCreds);
-      
-      return this.connectionStatus;
     } catch (error) {
       console.error('Failed to create new connection:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       this.connectionStatus = { status: 'error', error: errorMessage };
-      return this.connectionStatus;
+      this.emit('status_update', this.connectionStatus);
     }
   }
 
   /**
    * Connect with existing session
    */
-  private async connectWithSession(session: { id: string; authBlob: string | null }): Promise<ConnectionStatus> {
+  private async connectWithSession(session: { id: string; authBlob: string | null }): Promise<void> {
     try {
       this.connectionStatus = { status: 'connecting' };
       this.emit('status_update', this.connectionStatus);
@@ -168,16 +201,29 @@ export class BaileysManager extends EventEmitter {
         defaultQueryTimeoutMs: 60000,
         keepAliveIntervalMs: 30000,
         markOnlineOnConnect: true,
+        options: {
+          // WebSocket configuration to prevent buffer utility errors
+          perMessageDeflate: false,
+          skipUTF8Validation: false,
+          maxPayload: 100 * 1024 * 1024, // 100MB
+        },
+        // Additional socket configuration
+        retryRequestDelayMs: 250,
+        maxMsgRetryCount: 5,
+        fireInitQueries: true,
+        emitOwnEvents: true,
+        getMessage: async (key) => {
+          // Return undefined to indicate message not found in cache
+          return undefined;
+        },
       });
 
       this.setupEventHandlers(saveCreds, session.id);
-      
-      return this.connectionStatus;
     } catch (error) {
       console.error('Failed to connect with session:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       this.connectionStatus = { status: 'error', error: errorMessage };
-      return this.connectionStatus;
+      this.emit('status_update', this.connectionStatus);
     }
   }
 
@@ -312,10 +358,42 @@ export class BaileysManager extends EventEmitter {
   }
 
   /**
+   * Get current QR code if available
+   */
+  getCurrentQRCode(): string | null {
+    return this.connectionStatus.qrCode || null;
+  }
+
+  /**
    * Get current socket instance
    */
   getSocket(): WASocket | null {
     return this.socket;
+  }
+
+  /**
+   * Check if socket is connected and ready
+   */
+  isSocketReady(): boolean {
+    return !!(this.socket && this.socket.ws && this.socket.ws.readyState === 1);
+  }
+
+  /**
+   * Safe socket state check
+   */
+  getSocketState(): 'connecting' | 'open' | 'closing' | 'closed' | 'not_initialized' {
+    if (!this.socket || !this.socket.ws) {
+      return 'not_initialized';
+    }
+    
+    const readyState = this.socket.ws.readyState;
+    switch (readyState) {
+      case 0: return 'connecting'; // WebSocket.CONNECTING
+      case 1: return 'open';       // WebSocket.OPEN
+      case 2: return 'closing';    // WebSocket.CLOSING
+      case 3: return 'closed';     // WebSocket.CLOSED
+      default: return 'not_initialized';
+    }
   }
 
   /**
@@ -327,8 +405,19 @@ export class BaileysManager extends EventEmitter {
       this.connectionStabilizer.reset();
 
       if (this.socket) {
-        this.socket.end(undefined);
-        this.socket = null;
+        try {
+          // Check if socket is still open before attempting to close
+          if (this.socket.ws && this.socket.ws.readyState === 1) { // WebSocket.OPEN = 1
+            this.socket.end(undefined);
+          } else {
+            console.log('WebSocket already closed, skipping end() call');
+          }
+        } catch (socketError) {
+          // Log the error but don't throw - socket might already be closed
+          console.warn('Error closing socket:', socketError instanceof Error ? socketError.message : socketError);
+        } finally {
+          this.socket = null;
+        }
       }
 
       if (this.sessionId) {

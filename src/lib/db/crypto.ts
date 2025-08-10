@@ -5,6 +5,17 @@ const ENCRYPTION_KEY = process.env.SESSION_ENCRYPTION_KEY || 'your-32-byte-encry
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16; // 16 bytes for AES
 const TAG_LENGTH = 16; // 16 bytes for GCM tag
+const SALT_LENGTH = 16; // 16 bytes for salt
+
+// Derive a key from password using scrypt
+function deriveKey(password: string, salt: Buffer): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    crypto.scrypt(password, salt, 32, (err, derivedKey) => {
+      if (err) reject(err);
+      else resolve(derivedKey as Buffer);
+    });
+  });
+}
 
 /**
  * Encrypt sensitive data (like session auth blobs)
@@ -12,23 +23,20 @@ const TAG_LENGTH = 16; // 16 bytes for GCM tag
 export async function encrypt(text: string): Promise<string> {
   try {
     const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipher(ALGORITHM, ENCRYPTION_KEY);
-    cipher.setAutoPadding(true);
+    const salt = crypto.randomBytes(SALT_LENGTH);
+    const key = await deriveKey(ENCRYPTION_KEY, salt);
+    const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
 
-    let encrypted = cipher.update(text, 'utf8', 'base64');
-    encrypted += cipher.final('base64');
+    let encrypted = cipher.update(text, 'utf8');
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
 
-    // For GCM mode, we need to handle the auth tag
-    const authTag = cipher.getAuthTag ? cipher.getAuthTag() : Buffer.alloc(0);
+    // Get the auth tag for GCM mode
+    const authTag = cipher.getAuthTag();
     
-    // Combine IV, authTag, and encrypted data
-    const result = {
-      iv: iv.toString('base64'),
-      authTag: authTag.toString('base64'),
-      encryptedData: encrypted,
-    };
+    // Combine salt, IV, authTag, and encrypted data
+    const result = Buffer.concat([salt, iv, authTag, encrypted]);
 
-    return Buffer.from(JSON.stringify(result)).toString('base64');
+    return result.toString('base64');
   } catch (error) {
     console.error('Encryption error:', error);
     // Fallback: return original text (not recommended for production)
@@ -41,18 +49,23 @@ export async function encrypt(text: string): Promise<string> {
  */
 export async function decrypt(encryptedText: string): Promise<string> {
   try {
-    const parsed = JSON.parse(Buffer.from(encryptedText, 'base64').toString('utf8'));
+    const encryptedBuffer = Buffer.from(encryptedText, 'base64');
     
-    const decipher = crypto.createDecipher(ALGORITHM, ENCRYPTION_KEY);
+    // Extract components
+    const salt = encryptedBuffer.slice(0, SALT_LENGTH);
+    const iv = encryptedBuffer.slice(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
+    const authTag = encryptedBuffer.slice(SALT_LENGTH + IV_LENGTH, SALT_LENGTH + IV_LENGTH + TAG_LENGTH);
+    const encrypted = encryptedBuffer.slice(SALT_LENGTH + IV_LENGTH + TAG_LENGTH);
     
-    if (parsed.authTag) {
-      decipher.setAuthTag(Buffer.from(parsed.authTag, 'base64'));
-    }
+    // Derive key
+    const key = await deriveKey(ENCRYPTION_KEY, salt);
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    decipher.setAuthTag(authTag);
 
-    let decrypted = decipher.update(parsed.encryptedData, 'base64', 'utf8');
-    decrypted += decipher.final('utf8');
+    let decrypted = decipher.update(encrypted);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
 
-    return decrypted;
+    return decrypted.toString('utf8');
   } catch (error) {
     console.error('Decryption error:', error);
     // Fallback: try to decode as simple base64
