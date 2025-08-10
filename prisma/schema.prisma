@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../data/wa_sessions.sqlite"
+}
+
+model Session {
+  id          String    @id @default(cuid())
+  deviceName  String
+  createdAt   DateTime  @default(now())
+  authBlob    String?   // Encrypted authentication data
+  lastSeenAt  DateTime?
+  isActive    Boolean   @default(true)
+  
+  // Relations
+  sendHistory SendHistory[]
+  
+  @@map("sessions")
+}
+
+model SendHistory {
+  id               String    @id @default(cuid())
+  sessionId        String
+  targetType       String    // 'status', 'contact', 'group'
+  targetIdentifier String?   // Phone number, group ID, etc.
+  files            String    // JSON array of file paths/info
+  status           String    // 'pending', 'uploading', 'sending', 'completed', 'failed'
+  createdAt        DateTime  @default(now())
+  completedAt      DateTime?
+  errorMessage     String?
+  
+  // Relations
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@map("send_history")
+}
+
+model MediaMeta {
+  id            String   @id @default(cuid())
+  filename      String
+  originalName  String
+  mimetype      String
+  sizeBytes     Int
+  storagePath   String
+  sha256        String?
+  tmpCreatedAt  DateTime @default(now())
+  duration      Int?     // For videos/audio
+  width         Int?     // For images/videos
+  height        Int?     // For images/videos
+  isTemporary   Boolean  @default(true)
+  
+  @@map("media_meta")
+}
