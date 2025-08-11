@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Header, Sidebar } from '../components/layout';
+import React from 'react';
+import { Header } from '../components/layout';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 
 export default function AppLayout({
@@ -9,26 +9,14 @@ export default function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gray-50">
-        <div className="flex h-screen overflow-hidden">
-          <Sidebar 
-            isOpen={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
-          />
+      <div className="min-h-screen bg-white">
+        <div className="flex flex-col h-screen">
+          <Header />
           
-          <div className="flex flex-col flex-1 overflow-hidden lg:pl-64">
-            <Header 
-              onMenuToggle={() => setSidebarOpen(true)}
-              showMenuButton={true}
-            />
-            
-            <div className="flex-1 overflow-auto">
-              {children}
-            </div>
+          <div className="flex-1 overflow-auto">
+            {children}
           </div>
         </div>
       </div>

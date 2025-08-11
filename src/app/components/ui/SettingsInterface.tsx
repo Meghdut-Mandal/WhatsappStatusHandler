@@ -38,7 +38,6 @@ export const SettingsInterface: React.FC<SettingsInterfaceProps> = ({
         {/* Sidebar */}
         <div className="lg:col-span-1 bg-gray-50 border-r border-gray-200">
           <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Settings</h2>
             <nav className="space-y-2">
               {sections.map((section) => (
                 <button

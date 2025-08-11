@@ -4,6 +4,7 @@ export { ConnectionStatus } from './ConnectionStatus';
 export { ErrorBoundary } from './ErrorBoundary';
 export { Loading } from './Loading';
 export { QRDisplay } from './QRDisplay';
+export { HamburgerMenu } from './HamburgerMenu';
 
 // Week 2 components
 export { FileUpload } from './FileUpload';

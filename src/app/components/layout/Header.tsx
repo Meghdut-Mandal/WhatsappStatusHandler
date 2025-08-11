@@ -4,33 +4,21 @@ import React from 'react';
 import Link from 'next/link';
 import { Button } from '../ui/Button';
 import { ConnectionStatus } from '../ui/ConnectionStatus';
+import { HamburgerMenu } from '../ui/HamburgerMenu';
 import { cn } from '@/lib/utils/cn';
 
 interface HeaderProps {
   className?: string;
-  onMenuToggle?: () => void;
-  showMenuButton?: boolean;
 }
 
-export function Header({ className, onMenuToggle, showMenuButton = false }: HeaderProps) {
+export function Header({ className }: HeaderProps) {
   return (
     <header className={cn(
-      'bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between',
+      'bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between w-full',
       className
     )}>
       <div className="flex items-center space-x-4">
-        {showMenuButton && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onMenuToggle}
-            className="lg:hidden"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </Button>
-        )}
+        <HamburgerMenu />
         
         <Link href="/" className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
