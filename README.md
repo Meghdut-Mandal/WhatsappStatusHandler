@@ -1,7 +1,6 @@
 # WhatsApp Status Handler
 
-A powerful Next.js application for managing WhatsApp messaging automation, status updates, and media handling without compression. Built with modern web technologies and the Baileys WhatsApp Web API.
-
+A app to upload media to WhatsApp Status without compression.Built with Next.js, TypeScript, and the Baileys library.
 ## 🎯 Overview
 
 The WhatsApp Status Handler enables users to:
@@ -182,10 +181,6 @@ The application uses SQLite with Prisma ORM. The database includes:
 - **Message analytics** - Track delivery rates and engagement
 - **Performance metrics** - System health and performance monitoring
 - **WebSocket updates** - Live status updates without page refresh
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](./docs/development/CONTRIBUTING.md) for details.
 
 ### Development Workflow
 1. Fork the repository
