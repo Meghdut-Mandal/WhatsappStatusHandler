@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FileManager } from '@/app/components/ui';
+import { FileManager, MediaHistory } from '@/app/components/ui';
 import { FileWithPreview } from '@/app/components/ui/FileUpload';
 
 export default function UploadPage() {
@@ -67,7 +67,7 @@ export default function UploadPage() {
               WhatsApp File Upload & Send
             </h1>
             <p className="text-gray-600">
-              Upload files and send them to WhatsApp Status, contacts, or groups without compression.
+              Upload files and send them to WhatsApp Status, contacts, or groups without compression. View and reuse previously uploaded media from your history.
             </p>
           </div>
 
@@ -119,6 +119,60 @@ export default function UploadPage() {
               handleFileSend(files, sendTarget.type, sendTarget.identifier);
             }}
           />
+
+          {/* Media History */}
+          <div className="mt-8">
+            <MediaHistory 
+              onFileSelect={(files) => {
+                // Convert MediaHistoryFile to FileWithPreview format for sending
+                const convertedFiles: Partial<FileWithPreview>[] = files.map(file => ({
+                  id: file.id,
+                  name: file.originalName,
+                  size: file.sizeBytes,
+                  type: file.mimetype,
+                  lastModified: new Date(file.createdAt).getTime(),
+                  uploadStatus: 'completed' as const,
+                  mediaMetaId: file.id,
+                  preview: file.previewUrl,
+                  // Add minimal File-like properties
+                  webkitRelativePath: '',
+                  arrayBuffer: async () => new ArrayBuffer(0),
+                  bytes: async () => new Uint8Array(0),
+                  slice: () => new Blob(),
+                  stream: () => new ReadableStream(),
+                  text: async () => '',
+                }));
+                handleFileSend(convertedFiles as FileWithPreview[], sendTarget.type, sendTarget.identifier);
+              }}
+              onFileResend={(file) => {
+                // Convert single file to array for sending
+                const convertedFile: Partial<FileWithPreview> = {
+                  id: file.id,
+                  name: file.originalName,
+                  size: file.sizeBytes,
+                  type: file.mimetype,
+                  lastModified: new Date(file.createdAt).getTime(),
+                  uploadStatus: 'completed' as const,
+                  mediaMetaId: file.id,
+                  preview: file.previewUrl,
+                  // Add minimal File-like properties
+                  webkitRelativePath: '',
+                  arrayBuffer: async () => new ArrayBuffer(0),
+                  bytes: async () => new Uint8Array(0),
+                  slice: () => new Blob(),
+                  stream: () => new ReadableStream(),
+                  text: async () => '',
+                };
+                handleFileSend([convertedFile as FileWithPreview], sendTarget.type, sendTarget.identifier);
+              }}
+              onFileDelete={(fileIds) => {
+                // Handle file deletion
+                console.log('Deleting files:', fileIds);
+                // The MediaHistory component already handles the API call
+              }}
+              maxHeight="500px"
+            />
+          </div>
 
         </div>
       </div>

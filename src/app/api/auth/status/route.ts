@@ -44,11 +44,18 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    // Check pairing code capability
+    const canRequestPairingCode = baileysManager.canRequestPairingCode();
+    
     return NextResponse.json({
       success: true,
       status: connectionStatus.status,
       session: sessionInfo,
       whatsappUser: connectionStatus.session,
+      capabilities: {
+        canRequestPairingCode,
+        supportsQRCode: connectionStatus.status === 'qr_required' || connectionStatus.status === 'connecting',
+      },
       timestamp: new Date().toISOString(),
     });
     

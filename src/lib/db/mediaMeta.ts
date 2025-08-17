@@ -237,4 +237,25 @@ export class MediaMetaService {
 
     return duplicateGroups;
   }
+
+  /**
+   * Count media meta records
+   */
+  static async count(where?: Prisma.MediaMetaWhereInput): Promise<number> {
+    return prisma.mediaMeta.count({ where });
+  }
+
+  /**
+   * Find many media meta records
+   */
+  static async findMany(args?: Prisma.MediaMetaFindManyArgs): Promise<MediaMeta[]> {
+    return prisma.mediaMeta.findMany(args);
+  }
+
+  /**
+   * Delete many media meta records
+   */
+  static async deleteMany(args: Prisma.MediaMetaDeleteManyArgs): Promise<Prisma.BatchPayload> {
+    return prisma.mediaMeta.deleteMany(args);
+  }
 }

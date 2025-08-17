@@ -81,21 +81,59 @@ export async function POST(_request: NextRequest) {
     console.log('Initializing new connection with enhanced settings...');
     await baileysManager.initialize();
     
-    // Wait a bit for QR code generation
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Get the status after initialization
-    const status = baileysManager.getConnectionStatus();
-    const qrCode = baileysManager.getCurrentQRCode();
-    
-    return NextResponse.json({
-      success: true,
-      status: status.status,
-      qrCode: qrCode,
-      message: status.status === 'connecting' ? 'Connection started, QR code will be available shortly...' : 
-               status.status === 'qr_required' ? 'QR code generated successfully!' : undefined,
-      timestamp: new Date().toISOString(),
-    });
+    try {
+      // Wait for QR code generation using event-based approach
+      console.log('Waiting for QR code generation...');
+      const qrCode = await baileysManager.waitForQRCode(15000); // 15 second timeout
+      
+      console.log('QR code generated successfully via event');
+      return NextResponse.json({
+        success: true,
+        status: 'qr_required',
+        qrCode: qrCode,
+        message: 'QR code generated successfully!',
+        timestamp: new Date().toISOString(),
+      });
+      
+    } catch (qrError) {
+      console.warn('QR code wait failed:', qrError.message);
+      
+      // Fallback: check current status one more time
+      const status = baileysManager.getConnectionStatus();
+      const qrCode = baileysManager.getCurrentQRCode();
+      
+      // If we actually have a QR code despite the timeout, return it
+      if (qrCode) {
+        console.log('QR code available despite timeout');
+        return NextResponse.json({
+          success: true,
+          status: status.status,
+          qrCode: qrCode,
+          message: 'QR code generated successfully!',
+          timestamp: new Date().toISOString(),
+        });
+      }
+      
+      // Check if already connected
+      if (status.status === 'connected') {
+        return NextResponse.json({
+          success: true,
+          message: 'Already connected to WhatsApp',
+          status: status.status,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      
+      // Return partial success - connection started but QR not ready yet
+      return NextResponse.json({
+        success: true, // Don't fail completely, QR might come later
+        status: status.status,
+        qrCode: null,
+        message: 'Connection started. QR code will be available shortly. Please try refreshing in a moment.',
+        timeout: true,
+        timestamp: new Date().toISOString(),
+      });
+    }
     
   } catch (error) {
     console.error('QR regeneration error:', error);

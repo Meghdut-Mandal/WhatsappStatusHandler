@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { Button } from './Button';
 import { Loading } from './Loading';
 import { cn } from '@/lib/utils/cn';
+import { PairingCodeDialog } from './PairingCodeDialog';
+import { PairingCodeDisplay } from './PairingCodeDisplay';
 
 interface QRDisplayProps {
   className?: string;
@@ -25,6 +27,10 @@ export function QRDisplay({
   const [connectionStatus, setConnectionStatus] = useState<string>('disconnected');
   const [qrGeneratedAt, setQrGeneratedAt] = useState<Date | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const [showPairingDialog, setShowPairingDialog] = useState(false);
+  const [showPairingCode, setShowPairingCode] = useState(false);
+  const [pairingCode, setPairingCode] = useState<string>('');
+  const [pairingPhone, setPairingPhone] = useState<string>('');
 
   const fetchQR = async () => {
     setLoading(true);
@@ -63,6 +69,11 @@ export function QRDisplay({
       onRefresh();
     }
     fetchQR();
+  };
+
+  const handlePairingCodeSuccess = (code: string) => {
+    setPairingCode(code);
+    setShowPairingCode(true);
   };
 
   useEffect(() => {
@@ -179,7 +190,8 @@ export function QRDisplay({
   }
 
   return (
-    <div className={cn('flex flex-col items-center p-6 space-y-4', className)}>
+    <>
+      <div className={cn('flex flex-col items-center p-6 space-y-4', className)}>
       <div className="text-center mb-4">
         <h3 className="text-lg font-medium text-gray-900 mb-2">Scan QR Code</h3>
         <p className="text-sm text-gray-600">
@@ -223,18 +235,44 @@ export function QRDisplay({
           </p>
         )}
         
-        <div className="flex gap-2 justify-center">
-          <Button onClick={handleRefresh} variant="outline" size="sm" disabled={loading}>
-            {loading ? 'Refreshing...' : 'Refresh QR Code'}
-          </Button>
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2 justify-center">
+            <Button onClick={handleRefresh} variant="outline" size="sm" disabled={loading}>
+              {loading ? 'Refreshing...' : 'Refresh QR Code'}
+            </Button>
+            <Button 
+              onClick={() => setShowPairingDialog(true)} 
+              variant="outline" 
+              size="sm" 
+              disabled={loading}
+            >
+              📱 Use Phone Number
+            </Button>
+          </div>
           {autoRefresh && (
-            <div className="flex items-center text-xs text-gray-500">
+            <div className="flex items-center text-xs text-gray-500 justify-center">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-1"></div>
               Auto-refresh enabled
             </div>
           )}
         </div>
       </div>
-    </div>
+      </div>
+
+      {/* Pairing Code Dialog */}
+    <PairingCodeDialog
+      isOpen={showPairingDialog}
+      onClose={() => setShowPairingDialog(false)}
+      onSuccess={handlePairingCodeSuccess}
+    />
+
+    {/* Pairing Code Display */}
+    <PairingCodeDisplay
+      isOpen={showPairingCode}
+      onClose={() => setShowPairingCode(false)}
+      pairingCode={pairingCode}
+      phoneNumber={pairingPhone}
+    />
+    </>
   );
 }

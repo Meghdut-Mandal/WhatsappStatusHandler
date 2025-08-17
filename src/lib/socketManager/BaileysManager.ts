@@ -61,6 +61,47 @@ export class BaileysManager extends EventEmitter {
   }
 
   /**
+   * Create logger for Baileys socket based on environment
+   */
+  private createLogger() {
+    // Simple logger for development, minimal for production
+    const isDev = process.env.NODE_ENV === 'development';
+    
+    const logFunction = (level: string, ...args: unknown[]) => {
+      if (isDev || level === 'error') {
+        const prefix = `[Baileys:${level}]`;
+        switch (level) {
+          case 'error':
+            console.error(prefix, ...args);
+            break;
+          case 'warn':
+            console.warn(prefix, ...args);
+            break;
+          case 'info':
+            console.info(prefix, ...args);
+            break;
+          case 'debug':
+            if (isDev) console.debug(prefix, ...args);
+            break;
+          default:
+            if (isDev) console.log(prefix, ...args);
+        }
+      }
+    };
+
+    return {
+      level: isDev ? 'debug' : 'error',
+      fatal: (...args: unknown[]) => logFunction('fatal', ...args),
+      error: (...args: unknown[]) => logFunction('error', ...args),
+      warn: (...args: unknown[]) => logFunction('warn', ...args),
+      info: (...args: unknown[]) => logFunction('info', ...args),
+      debug: (...args: unknown[]) => logFunction('debug', ...args),
+      trace: (...args: unknown[]) => logFunction('trace', ...args),
+      child: () => this.createLogger(), // Return same logger for child instances
+    };
+  }
+
+  /**
    * Setup connection stabilizer event handlers
    */
   private setupStabilizerEventHandlers(): void {
@@ -256,12 +297,13 @@ export class BaileysManager extends EventEmitter {
         generateHighQualityLinkPreview: true,
         // Enable full history sync for better connection
         syncFullHistory: true,
-        // Note: request/options tuning removed due to type incompatibility in current Baileys types
-        // Additional socket configuration
+        // Additional socket configuration based on Baileys guide
         retryRequestDelayMs: 250,
         maxMsgRetryCount: 5,
         fireInitQueries: true,
         emitOwnEvents: true,
+        // Improved logging configuration
+        logger: this.createLogger(),
         getMessage: async (_key) => {
           // Return undefined to indicate message not found in cache
           return undefined;
@@ -308,12 +350,13 @@ export class BaileysManager extends EventEmitter {
         markOnlineOnConnect: true,
         // Enable full history sync for better connection
         syncFullHistory: true,
-        // Note: request/options tuning removed due to type incompatibility in current Baileys types
-        // Additional socket configuration
+        // Additional socket configuration based on Baileys guide
         retryRequestDelayMs: 250,
         maxMsgRetryCount: 5,
         fireInitQueries: true,
         emitOwnEvents: true,
+        // Improved logging configuration
+        logger: this.createLogger(),
         getMessage: async (_key) => {
           // Return undefined to indicate message not found in cache
           return undefined;
@@ -340,15 +383,32 @@ export class BaileysManager extends EventEmitter {
 
       if (qr) {
         try {
-          const qrCodeDataURL = await QRCode.toDataURL(qr);
+          // Generate QR code with enhanced options based on Baileys guide
+          const qrCodeDataURL = await QRCode.toDataURL(qr, {
+            width: 256,
+            margin: 2,
+            color: {
+              dark: '#000000',
+              light: '#FFFFFF'
+            },
+            errorCorrectionLevel: 'M'
+          });
+          
           this.connectionStatus = { 
             status: 'qr_required', 
             qrCode: qrCodeDataURL 
           };
+          
+          console.log('QR code generated successfully for WhatsApp authentication');
           this.emit('qr_code', qrCodeDataURL);
           this.emit('status_update', this.connectionStatus);
         } catch (error) {
           console.error('Failed to generate QR code:', error);
+          this.connectionStatus = { 
+            status: 'error', 
+            error: 'Failed to generate QR code' 
+          };
+          this.emit('status_update', this.connectionStatus);
         }
       }
 
@@ -520,6 +580,89 @@ export class BaileysManager extends EventEmitter {
    */
   getCurrentQRCode(): string | null {
     return this.connectionStatus.qrCode || null;
+  }
+
+  /**
+   * Request pairing code for phone number (alternative to QR code)
+   * Based on Baileys guide for pairing code authentication
+   */
+  async requestPairingCode(phoneNumber: string): Promise<string | null> {
+    try {
+      if (!this.socket) {
+        console.error('Socket not initialized');
+        return null;
+      }
+
+      // Ensure the socket is not registered (fresh connection)
+      if (this.socket.authState?.creds?.registered) {
+        console.error('Socket already registered, cannot request pairing code');
+        return null;
+      }
+
+      // Request pairing code as per Baileys guide
+      const code = await this.socket.requestPairingCode(phoneNumber);
+      console.log('Pairing code generated:', code);
+      
+      return code;
+    } catch (error) {
+      console.error('Failed to request pairing code:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Check if socket can request pairing code
+   */
+  canRequestPairingCode(): boolean {
+    return this.socket !== null && !this.socket.authState?.creds?.registered;
+  }
+
+  /**
+   * Wait for QR code generation with Promise-based approach
+   * Returns a promise that resolves when QR code is available or rejects on timeout/error
+   */
+  async waitForQRCode(timeoutMs: number = 10000): Promise<string> {
+    return new Promise((resolve, reject) => {
+      // Check if QR is already available
+      const currentQR = this.getCurrentQRCode();
+      if (currentQR) {
+        resolve(currentQR);
+        return;
+      }
+
+      let resolved = false;
+      const timeout = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          reject(new Error(`QR code generation timeout after ${timeoutMs}ms`));
+        }
+      }, timeoutMs);
+
+      // Listen for QR code generation
+      const onQRCode = (qrCode: string) => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          this.off('qr_code', onQRCode);
+          this.off('status_update', onStatusUpdate);
+          resolve(qrCode);
+        }
+      };
+
+      // Listen for errors
+      const onStatusUpdate = (status: ConnectionStatus) => {
+        if (!resolved && status.status === 'error') {
+          resolved = true;
+          clearTimeout(timeout);
+          this.off('qr_code', onQRCode);
+          this.off('status_update', onStatusUpdate);
+          reject(new Error(status.error || 'QR code generation failed'));
+        }
+      };
+
+      this.on('qr_code', onQRCode);
+      this.on('status_update', onStatusUpdate);
+    });
   }
 
   /**

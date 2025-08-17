@@ -5,12 +5,15 @@ export { ErrorBoundary } from './ErrorBoundary';
 export { Loading } from './Loading';
 export { QRDisplay } from './QRDisplay';
 export { HamburgerMenu } from './HamburgerMenu';
+export { PairingCodeDialog } from './PairingCodeDialog';
+export { PairingCodeDisplay } from './PairingCodeDisplay';
 
 // Week 2 components
 export { FileUpload } from './FileUpload';
 export { MediaPreview } from './MediaPreview';
 export { UploadProgress } from './UploadProgress';
 export { FileManager } from './FileManager';
+export { MediaHistory } from './MediaHistory';
 
 // Week 3 components
 export { StatisticsWidget, ActivityOverview } from './StatisticsWidget';

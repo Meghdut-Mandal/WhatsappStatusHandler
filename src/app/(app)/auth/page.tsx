@@ -42,23 +42,46 @@ export default function AuthPage() {
       
       const data = await response.json();
       
-      if (data.success && data.qr) {
-        setQrCode(data.qr);
-        // Poll for connection status
-        const interval = setInterval(async () => {
-          const statusResponse = await fetch('/api/auth/status');
-          const statusData = await statusResponse.json();
-          if (statusData.success && statusData.status === 'connected') {
-            setConnected(true);
-            clearInterval(interval);
-            setTimeout(() => {
-              router.push('/');
-            }, 2000);
-          }
-        }, 3000);
-        
-        // Clear interval after 5 minutes
-        setTimeout(() => clearInterval(interval), 5 * 60 * 1000);
+      if (data.success) {
+        if (data.qrCode) {
+          setQrCode(data.qrCode);
+          
+          // Poll for connection status
+          const interval = setInterval(async () => {
+            const statusResponse = await fetch('/api/auth/status');
+            const statusData = await statusResponse.json();
+            if (statusData.success && statusData.status === 'connected') {
+              setConnected(true);
+              clearInterval(interval);
+              setTimeout(() => {
+                router.push('/');
+              }, 2000);
+            }
+          }, 3000);
+          
+          // Clear interval after 5 minutes
+          setTimeout(() => clearInterval(interval), 5 * 60 * 1000);
+        } else if (data.timeout) {
+          // Handle timeout case - show message but don't error completely
+          setError('QR code is being generated. Please wait a moment and try refreshing.');
+          
+          // Auto-retry after a short delay
+          setTimeout(async () => {
+            setError(null);
+            try {
+              const retryResponse = await fetch('/api/auth/qr');
+              const retryData = await retryResponse.json();
+              if (retryData.success && retryData.qrCode) {
+                setQrCode(retryData.qrCode);
+                setError(null);
+              }
+            } catch (retryError) {
+              console.warn('Auto-retry failed:', retryError);
+            }
+          }, 3000);
+        } else {
+          setError(data.message || 'QR code not ready yet. Please try again in a moment.');
+        }
       } else {
         setError(data.error || 'Failed to generate QR code');
       }
