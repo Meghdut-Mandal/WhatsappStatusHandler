@@ -456,6 +456,11 @@ export interface SessionInfo {
   createdAt: Date;
   lastSeenAt: Date;
   isActive: boolean;
+  connectionStatus?: string;
+  whatsappUser?: {
+    id?: string;
+    name?: string;
+  };
 }
 
 export interface SessionManagementProps {
@@ -464,7 +469,9 @@ export interface SessionManagementProps {
   onDisconnect: (sessionId: string) => void;
   onDeleteSession: (sessionId: string) => void;
   onCreateBackup: (sessionId: string) => void;
+  onRefresh?: () => void;
   loading?: boolean;
+  error?: string | null;
 }
 
 export const SessionManagement: React.FC<SessionManagementProps> = ({
@@ -473,15 +480,44 @@ export const SessionManagement: React.FC<SessionManagementProps> = ({
   onDisconnect,
   onDeleteSession,
   onCreateBackup,
+  onRefresh,
   loading = false,
+  error = null,
 }) => {
   return (
     <div className="space-y-6">
       <div>
-        <h4 className="text-lg font-medium text-gray-900 mb-4">WhatsApp Sessions</h4>
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="text-lg font-medium text-gray-900">WhatsApp Sessions</h4>
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              disabled={loading}
+              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50 flex items-center space-x-1"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>Refresh</span>
+            </button>
+          )}
+        </div>
         <p className="text-sm text-gray-600 mb-6">
           Manage your WhatsApp connection sessions. You can have multiple saved sessions but only one active at a time.
         </p>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="text-sm text-red-700">
+                <strong>Error loading sessions:</strong> {error}
+              </div>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="space-y-4">
@@ -518,7 +554,28 @@ export const SessionManagement: React.FC<SessionManagementProps> = ({
                             Current
                           </span>
                         )}
+                        {session.connectionStatus && (
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            session.connectionStatus === 'connected' 
+                              ? 'bg-green-100 text-green-800' 
+                              : session.connectionStatus === 'connecting'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {session.connectionStatus}
+                          </span>
+                        )}
                       </div>
+                      
+                      {session.whatsappUser && (
+                        <div className="text-sm text-gray-600 mb-2">
+                          <div className="flex items-center space-x-1">
+                            <span className="font-medium">WhatsApp:</span>
+                            <span>{session.whatsappUser.name || session.whatsappUser.id || 'Unknown'}</span>
+                          </div>
+                        </div>
+                      )}
+                      
                       <div className="text-sm text-gray-600">
                         <div>Created: {session.createdAt.toLocaleDateString()}</div>
                         <div>Last seen: {session.lastSeenAt.toLocaleDateString()}</div>

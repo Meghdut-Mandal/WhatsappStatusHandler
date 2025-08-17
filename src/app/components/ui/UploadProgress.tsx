@@ -98,19 +98,19 @@ export function UploadProgress({
   }
 
   return (
-    <div className={cn('bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700', className)}>
+    <div className={cn('bg-white rounded-lg shadow-sm border border-gray-200', className)}>
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Upload className="w-5 h-5 text-blue-600" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <h3 className="text-lg font-semibold text-gray-900 ">
               Upload Progress
             </h3>
             {stats.uploading > 0 && (
               <div className="flex items-center gap-2">
                 <Loader className="w-4 h-4 animate-spin text-blue-600" />
-                <span className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-sm text-gray-600 ">
                   {stats.uploading} uploading
                 </span>
               </div>
@@ -122,7 +122,7 @@ export function UploadProgress({
             <select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value as any)}
-              className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700"
+              className="text-sm border border-gray-300  rounded px-2 py-1 bg-white "
             >
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
@@ -134,7 +134,7 @@ export function UploadProgress({
             {onClearCompleted && stats.completed > 0 && (
               <button
                 onClick={onClearCompleted}
-                className="text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                className="text-sm text-gray-600 hover:text-gray-800  "
               >
                 Clear completed
               </button>
@@ -142,7 +142,7 @@ export function UploadProgress({
             {onClearAll && (
               <button
                 onClick={onClearAll}
-                className="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
+                className="text-sm text-red-600 hover:text-red-800  "
               >
                 Clear all
               </button>
@@ -153,17 +153,17 @@ export function UploadProgress({
         {/* Overall progress */}
         {showStats && (
           <div className="mt-4">
-            <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <div className="flex items-center justify-between text-sm text-gray-600  mb-2">
               <span>Overall Progress</span>
               <span>{Math.round(overallProgress)}%</span>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div className="w-full bg-gray-200  rounded-full h-2">
               <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-500"
                 style={{ width: `${overallProgress}%` }}
               />
             </div>
-            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
+            <div className="flex items-center justify-between text-xs text-gray-500  mt-2">
               <span>{formatFileSize(stats.uploadedSize)} / {formatFileSize(stats.totalSize)}</span>
               <span>{stats.completed} / {stats.total} files</span>
             </div>
@@ -174,7 +174,7 @@ export function UploadProgress({
         {showStats && !compact && (
           <div className="flex gap-4 mt-4 text-xs">
             {stats.pending > 0 && (
-              <span className="text-gray-600 dark:text-gray-400">
+              <span className="text-gray-600 ">
                 {stats.pending} pending
               </span>
             )}
@@ -194,7 +194,7 @@ export function UploadProgress({
               </span>
             )}
             {stats.cancelled > 0 && (
-              <span className="text-gray-600 dark:text-gray-400">
+              <span className="text-gray-600 ">
                 {stats.cancelled} cancelled
               </span>
             )}
@@ -291,7 +291,7 @@ function UploadItem({
   };
 
   return (
-    <div className="p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+    <div className="p-4 border-b border-gray-200  last:border-b-0">
       <div className="flex items-start gap-3">
         {/* File icon */}
         <div className="flex-shrink-0 mt-1">
@@ -301,7 +301,7 @@ function UploadItem({
         {/* File info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+            <p className="text-sm font-medium text-gray-900  truncate">
               {upload.originalName}
             </p>
             {getStatusIcon()}
@@ -311,7 +311,7 @@ function UploadItem({
           </div>
 
           {!compact && (
-            <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+            <div className="text-xs text-gray-500  mb-2">
               <span>{formatFileSize(upload.size)} • {upload.mimetype}</span>
               {upload.speed && upload.status === 'uploading' && (
                 <span> • {formatSpeed(upload.speed)}</span>
@@ -325,11 +325,11 @@ function UploadItem({
           {/* Progress bar */}
           {(upload.status === 'uploading' || upload.status === 'paused') && (
             <div className="mb-2">
-              <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+              <div className="flex items-center justify-between text-xs text-gray-600  mb-1">
                 <span>{formatFileSize(upload.uploaded)} / {formatFileSize(upload.size)}</span>
                 <span>{Math.round(progress)}%</span>
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div className="w-full bg-gray-200  rounded-full h-2">
                 <div
                   className={cn(
                     'h-2 rounded-full transition-all duration-300',
@@ -343,9 +343,9 @@ function UploadItem({
 
           {/* Error message */}
           {upload.status === 'error' && upload.error && (
-            <div className="flex items-start gap-2 mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm">
+            <div className="flex items-start gap-2 mt-2 p-2 bg-red-50  border border-red-200  rounded text-sm">
               <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-              <span className="text-red-700 dark:text-red-300">{upload.error}</span>
+              <span className="text-red-700 ">{upload.error}</span>
             </div>
           )}
 

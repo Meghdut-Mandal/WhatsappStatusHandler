@@ -48,7 +48,9 @@ interface AppSettings {
 export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionError, setSessionError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [exportInProgress, setExportInProgress] = useState(false);
   const [importInProgress, setImportInProgress] = useState(false);
@@ -57,6 +59,7 @@ export default function SettingsPage() {
   useEffect(() => {
     loadSettings();
     loadSessions();
+    loadCurrentSession();
   }, []);
 
   const loadSettings = async () => {
@@ -73,28 +76,77 @@ export default function SettingsPage() {
 
   const loadSessions = async () => {
     try {
-      // Mock sessions for now - in a real app this would fetch from the API
-      const mockSessions: SessionInfo[] = [
-        {
-          id: 'session-1',
-          deviceName: 'iPhone 12',
-          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-          lastSeenAt: new Date(Date.now() - 30 * 60 * 1000),
-          isActive: true,
+      setSessionError(null);
+      
+      // Get all sessions
+      const response = await fetch('/api/session/info', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        {
-          id: 'session-2',
-          deviceName: 'MacBook Pro',
-          createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-          lastSeenAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-          isActive: false,
-        },
-      ];
-      setSessions(mockSessions);
+        body: JSON.stringify({ action: 'get_all' }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.sessions) {
+        // Convert date strings to Date objects
+        const sessionsWithDates: SessionInfo[] = data.sessions.map((session: any) => ({
+          ...session,
+          createdAt: new Date(session.createdAt),
+          lastSeenAt: new Date(session.lastSeenAt),
+        }));
+        setSessions(sessionsWithDates);
+      } else {
+        throw new Error(data.error || 'Failed to load sessions');
+      }
     } catch (error) {
       console.error('Failed to load sessions:', error);
+      setSessionError(error instanceof Error ? error.message : 'Failed to load sessions');
+      setSessions([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCurrentSession = async () => {
+    try {
+      // Get current active session with connection status
+      const response = await fetch('/api/session/info?includeStats=true');
+      
+      if (!response.ok) {
+        // Don't set error for current session loading as it's not critical
+        setCurrentSessionId(null);
+        return;
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.session) {
+        setCurrentSessionId(data.session.id);
+        
+        // Update the session in our sessions array with additional info
+        setSessions(prevSessions => 
+          prevSessions.map(session => 
+            session.id === data.session.id 
+              ? {
+                  ...session,
+                  connectionStatus: data.session.connectionStatus,
+                  whatsappUser: data.session.whatsappUser,
+                }
+              : session
+          )
+        );
+      } else {
+        setCurrentSessionId(null);
+      }
+    } catch (error) {
+      console.error('Failed to load current session:', error);
+      setCurrentSessionId(null);
     }
   };
 
@@ -222,6 +274,11 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Backup failed:', error);
     }
+  };
+
+  const handleRefreshSessions = async () => {
+    setLoading(true);
+    await Promise.all([loadSessions(), loadCurrentSession()]);
   };
 
   if (loading || !settings) {
@@ -477,11 +534,13 @@ export default function SettingsPage() {
       component: (
         <SessionManagement
           sessions={sessions}
-          currentSessionId={sessions.find(s => s.isActive)?.id}
+          currentSessionId={currentSessionId || undefined}
           onDisconnect={handleDisconnectSession}
           onDeleteSession={handleDeleteSession}
           onCreateBackup={handleCreateBackup}
-          loading={false}
+          onRefresh={handleRefreshSessions}
+          loading={loading}
+          error={sessionError}
         />
       ),
     },

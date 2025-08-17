@@ -49,7 +49,7 @@ export function MediaPreview({
   // Early return if file is not provided or missing required properties
   if (!file) {
     return (
-      <div className={cn('w-full h-48 bg-gray-100 dark:bg-gray-800 rounded-lg flex flex-col items-center justify-center text-gray-500 dark:text-gray-400', className)}>
+      <div className={cn('w-full h-48 bg-gray-100 rounded-lg flex flex-col items-center justify-center text-gray-500', className)}>
         <File className="w-8 h-8" />
         <p className="mt-2 text-sm text-center px-2">No file selected</p>
       </div>
@@ -81,13 +81,16 @@ export function MediaPreview({
       <div className={cn('relative group', className)}>
         {fileType.startsWith('image/') && file.preview ? (
           <div 
-            className="relative cursor-pointer overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
+            className="relative cursor-pointer overflow-hidden rounded-lg bg-gray-100"
             onClick={handlePreviewClick}
           >
             <img
               src={file.preview}
               alt={fileName}
-              className="w-full h-48 object-cover transition-transform group-hover:scale-105"
+              className={cn(
+                "w-full object-cover transition-transform group-hover:scale-105",
+                showControls ? "h-48" : "h-full"
+              )}
             />
             {showControls && (
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -97,12 +100,15 @@ export function MediaPreview({
           </div>
         ) : fileType.startsWith('video/') && file.preview ? (
           <div 
-            className="relative cursor-pointer overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
+            className="relative cursor-pointer overflow-hidden rounded-lg bg-gray-100"
             onClick={handlePreviewClick}
           >
             <video
               src={file.preview}
-              className="w-full h-48 object-cover"
+              className={cn(
+                "w-full object-cover",
+                showControls ? "h-48" : "h-full"
+              )}
               preload="metadata"
             />
             {showControls && (
@@ -112,10 +118,17 @@ export function MediaPreview({
             )}
           </div>
         ) : (
-          <div className="w-full h-48 bg-gray-100 dark:bg-gray-800 rounded-lg flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+          <div className={cn(
+            "w-full bg-gray-100 rounded-lg flex flex-col items-center justify-center text-gray-500",
+            showControls ? "h-48" : "h-full"
+          )}>
             {getFileIcon()}
-            <p className="mt-2 text-sm text-center px-2 truncate w-full">{fileName}</p>
-            <p className="text-xs text-gray-400">{formatFileSize(fileSize)}</p>
+            {showControls && (
+              <>
+                <p className="mt-2 text-sm text-center px-2 truncate w-full">{fileName}</p>
+                <p className="text-xs text-gray-400">{formatFileSize(fileSize)}</p>
+              </>
+            )}
           </div>
         )}
 

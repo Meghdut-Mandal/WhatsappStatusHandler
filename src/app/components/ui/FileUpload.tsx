@@ -199,9 +199,9 @@ export function FileUpload({
         className={cn(
           'border-2 border-dashed rounded-lg p-8 text-center transition-colors duration-200',
           isDragOver 
-            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-            : 'border-gray-300 dark:border-gray-600',
-          disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-gray-400 dark:hover:border-gray-500'
+            ? 'border-blue-500 bg-blue-50' 
+            : 'border-gray-300',
+          disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-gray-400'
         )}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
@@ -210,13 +210,13 @@ export function FileUpload({
         onClick={() => !disabled && fileInputRef.current?.click()}
       >
         <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+        <p className="text-lg font-medium text-gray-900 mb-2">
           {isDragOver ? 'Drop files here' : 'Upload files'}
         </p>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+        <p className="text-sm text-gray-500 mb-4">
           Drag and drop files here, or click to browse
         </p>
-        <p className="text-xs text-gray-400 dark:text-gray-500">
+        <p className="text-xs text-gray-400">
           Max {maxFiles} files • Max size {formatFileSize(maxSize)}
         </p>
       </div>
@@ -234,14 +234,14 @@ export function FileUpload({
 
       {/* Error messages */}
       {errors.length > 0 && (
-        <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <div className="flex items-start">
             <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
+              <h3 className="text-sm font-medium text-red-800">
                 Upload Errors
               </h3>
-              <ul className="mt-2 text-sm text-red-700 dark:text-red-300 list-disc list-inside">
+              <ul className="mt-2 text-sm text-red-700 list-disc list-inside">
                 {errors.map((error, index) => (
                   <li key={index}>{error}</li>
                 ))}
@@ -254,14 +254,14 @@ export function FileUpload({
       {/* Selected files */}
       {selectedFiles.length > 0 && (
         <div className="mt-6">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
             Selected Files ({selectedFiles.length})
           </h3>
           <div className="space-y-2">
             {selectedFiles.map((file) => (
               <div
                 key={file.id}
-                className="flex items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                className="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200"
               >
                 <div className="flex-shrink-0 mr-3">
                   {file.preview ? (
@@ -271,16 +271,16 @@ export function FileUpload({
                       className="w-10 h-10 object-cover rounded"
                     />
                   ) : (
-                    <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
+                    <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
                       {getFileIcon(file)}
                     </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                  <p className="text-sm font-medium text-gray-900 truncate">
                     {file.name}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-gray-500">
                     {formatFileSize(file.size)} • {file.type}
                   </p>
                   {file.uploadStatus === 'uploading' && (
