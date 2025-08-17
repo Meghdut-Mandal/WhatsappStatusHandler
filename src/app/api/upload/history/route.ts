@@ -11,8 +11,25 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
     const search = searchParams.get('search') || '';
     const mimeType = searchParams.get('mimeType') || '';
-    const sortBy = searchParams.get('sortBy') || 'tmpCreatedAt';
+    const sortByParam = searchParams.get('sortBy') || 'tmpCreatedAt';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
+
+    // Map frontend field names to database field names
+    const sortFieldMap: Record<string, string> = {
+      'createdAt': 'tmpCreatedAt',
+      'tmpCreatedAt': 'tmpCreatedAt',
+      'filename': 'filename',
+      'originalName': 'originalName',
+      'mimetype': 'mimetype',
+      'sizeBytes': 'sizeBytes',
+      'duration': 'duration',
+      'width': 'width',
+      'height': 'height',
+      'isTemporary': 'isTemporary'
+    };
+
+    // Use mapped field name or default to tmpCreatedAt if field is invalid
+    const sortBy = sortFieldMap[sortByParam] || 'tmpCreatedAt';
 
     // Build filter conditions
     const filters: Record<string, unknown> = {};
