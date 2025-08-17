@@ -120,39 +120,6 @@ export default function UploadPage() {
             }}
           />
 
-          {/* Feature Information */}
-          <div className="mt-12 grid md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                Streaming Upload
-              </h3>
-              <p className="text-gray-600 text-sm">
-                Upload large files up to 2GB with real-time progress tracking and no memory issues.
-                Files are streamed directly to disk using busboy.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                Media Preview
-              </h3>
-              <p className="text-gray-600 text-sm">
-                Preview images with zoom and rotation, videos with full controls, and comprehensive
-                file metadata display before sending.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                WhatsApp Integration
-              </h3>
-              <p className="text-gray-600 text-sm">
-                Send files to WhatsApp Status, specific contacts, or groups while preserving
-                original quality without compression.
-              </p>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>
