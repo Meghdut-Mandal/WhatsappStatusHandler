@@ -55,8 +55,12 @@ export function FileManager({ onFileSend, className }: FileManagerProps) {
     try {
       // Create FormData for upload
       const formData = new FormData();
-      filesToUpload.forEach((file) => {
+      // Create mapping between form data index and file ID
+      const fileIdMapping: { [index: number]: string } = {};
+      
+      filesToUpload.forEach((file, index) => {
         formData.append('files', file);
+        fileIdMapping[index] = file.id;
       });
 
       // Initialize upload progress items
@@ -92,15 +96,40 @@ export function FileManager({ onFileSend, className }: FileManagerProps) {
           }))
         );
 
-        // Update files with upload results
+        // Create a better mapping using file order and name as fallback
+        const uploadResultsMap = new Map();
+        result.uploads.forEach((upload: any, index: number) => {
+          // Try to match by index first, then by name as fallback
+          const fileId = fileIdMapping[index];
+          if (fileId) {
+            uploadResultsMap.set(fileId, upload);
+          } else {
+            // Fallback: match by name for any remaining unmatched uploads
+            const matchingFile = filesToUpload.find(f => f.name === upload.originalName);
+            if (matchingFile && !uploadResultsMap.has(matchingFile.id)) {
+              uploadResultsMap.set(matchingFile.id, upload);
+            }
+          }
+        });
+
+        // Update files with upload results, preserving all original file properties
         setFiles(prev => 
           prev.map(file => {
-            const uploadResult = result.uploads.find((u: any) => u.originalName === file.name);
-            if (uploadResult) {
+            const uploadResult = uploadResultsMap.get(file.id);
+            if (uploadResult && uploadResult.status === 'completed') {
               return {
-                ...file,
+                ...file, // Preserve all original properties including preview
                 uploadStatus: 'completed' as const,
                 mediaMetaId: uploadResult.mediaMetaId,
+                // Preserve filename and type from original file to maintain consistency
+                name: file.name, // Keep original name
+                type: file.type, // Keep original type
+              };
+            } else if (uploadResult && uploadResult.status === 'error') {
+              return {
+                ...file,
+                uploadStatus: 'error' as const,
+                error: uploadResult.error || 'Upload failed',
               };
             }
             return file;
@@ -116,15 +145,35 @@ export function FileManager({ onFileSend, className }: FileManagerProps) {
             endTime: Date.now(),
           }))
         );
+
+        // Update files with error status
+        setFiles(prev => 
+          prev.map(file => ({
+            ...file,
+            uploadStatus: 'error' as const,
+            error: result.error || 'Upload failed',
+          }))
+        );
       }
     } catch (error) {
       console.error('Upload error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Network error';
+      
       setUploadProgress(prev => 
         prev.map(item => ({
           ...item,
           status: 'error' as const,
-          error: 'Network error',
+          error: errorMessage,
           endTime: Date.now(),
+        }))
+      );
+
+      // Update files with error status
+      setFiles(prev => 
+        prev.map(file => ({
+          ...file,
+          uploadStatus: 'error' as const,
+          error: errorMessage,
         }))
       );
     } finally {

@@ -61,6 +61,19 @@ export function MediaPreview({
   const fileName = file.name || 'Unknown file';
   const fileSize = file.size || 0;
 
+  // Special handling for files that appear to be missing core properties
+  const isFileCorrupted = !file.name && !file.type && !file.size;
+  
+  if (isFileCorrupted) {
+    return (
+      <div className={cn('w-full h-48 bg-red-50 border border-red-200 rounded-lg flex flex-col items-center justify-center text-red-500', className)}>
+        <File className="w-8 h-8" />
+        <p className="mt-2 text-sm text-center px-2">File data corrupted</p>
+        <p className="text-xs text-red-400">Please re-upload this file</p>
+      </div>
+    );
+  }
+
   const handlePreviewClick = () => {
     if (fileType.startsWith('image/') || fileType.startsWith('video/')) {
       setIsModalOpen(true);
@@ -91,11 +104,40 @@ export function MediaPreview({
                 "w-full object-cover transition-transform group-hover:scale-105",
                 showControls ? "h-48" : "h-full"
               )}
+              onError={(e) => {
+                // Handle broken image preview
+                const container = (e.target as HTMLImageElement).parentElement;
+                if (container) {
+                  container.innerHTML = `
+                    <div class="w-full h-full flex flex-col items-center justify-center text-gray-500">
+                      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg>
+                      <p class="mt-2 text-sm">${fileName}</p>
+                      <p class="text-xs text-gray-400">Preview unavailable</p>
+                    </div>
+                  `;
+                }
+              }}
             />
             {showControls && (
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <Eye className="w-8 h-8 text-white" />
               </div>
+            )}
+          </div>
+        ) : fileType.startsWith('image/') && !file.preview ? (
+          <div className={cn(
+            "w-full bg-gray-100 rounded-lg flex flex-col items-center justify-center text-gray-500",
+            showControls ? "h-48" : "h-full"
+          )}>
+            <ImageIcon className="w-8 h-8" />
+            {showControls && (
+              <>
+                <p className="mt-2 text-sm text-center px-2 truncate w-full">{fileName}</p>
+                <p className="text-xs text-gray-400">{formatFileSize(fileSize)}</p>
+                <p className="text-xs text-gray-400 mt-1">Image file</p>
+              </>
             )}
           </div>
         ) : fileType.startsWith('video/') && file.preview ? (
@@ -117,6 +159,20 @@ export function MediaPreview({
               </div>
             )}
           </div>
+        ) : fileType.startsWith('video/') && !file.preview ? (
+          <div className={cn(
+            "w-full bg-gray-100 rounded-lg flex flex-col items-center justify-center text-gray-500",
+            showControls ? "h-48" : "h-full"
+          )}>
+            <VideoIcon className="w-8 h-8" />
+            {showControls && (
+              <>
+                <p className="mt-2 text-sm text-center px-2 truncate w-full">{fileName}</p>
+                <p className="text-xs text-gray-400">{formatFileSize(fileSize)}</p>
+                <p className="text-xs text-gray-400 mt-1">Video file</p>
+              </>
+            )}
+          </div>
         ) : (
           <div className={cn(
             "w-full bg-gray-100 rounded-lg flex flex-col items-center justify-center text-gray-500",
@@ -127,6 +183,11 @@ export function MediaPreview({
               <>
                 <p className="mt-2 text-sm text-center px-2 truncate w-full">{fileName}</p>
                 <p className="text-xs text-gray-400">{formatFileSize(fileSize)}</p>
+                {fileType && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    {fileType.split('/')[0].charAt(0).toUpperCase() + fileType.split('/')[0].slice(1)} file
+                  </p>
+                )}
               </>
             )}
           </div>
