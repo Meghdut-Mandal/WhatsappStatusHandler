@@ -35,7 +35,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Build filters
-    const filters: any = {
+    const filters: {
+      limit: number;
+      offset: number;
+      sortBy: 'createdAt' | 'completedAt' | 'targetType';
+      sortOrder: 'asc' | 'desc';
+      targetType?: string;
+      status?: string;
+      dateFrom?: Date;
+      dateTo?: Date;
+    } = {
       limit,
       offset,
       sortBy: sortBy as 'createdAt' | 'completedAt' | 'targetType',
@@ -68,7 +77,7 @@ export async function GET(request: NextRequest) {
       const searchTerm = search.toLowerCase();
       filteredHistory = sendHistory.filter(item => 
         item.targetIdentifier?.toLowerCase().includes(searchTerm) ||
-        (typeof item.files === 'string' ? JSON.parse(item.files) : item.files)?.some((file: any) => 
+        (typeof item.files === 'string' ? JSON.parse(item.files) : item.files)?.some((file: { name?: string; caption?: string }) => 
           file.name?.toLowerCase().includes(searchTerm) ||
           file.caption?.toLowerCase().includes(searchTerm)
         )
@@ -111,7 +120,7 @@ export async function GET(request: NextRequest) {
       targetId: item.targetIdentifier,
       files: (() => {
         const parsedFiles = typeof item.files === 'string' ? JSON.parse(item.files) : item.files;
-        return Array.isArray(parsedFiles) ? parsedFiles.map((file: any) => ({
+        return Array.isArray(parsedFiles) ? parsedFiles.map((file: { name?: string; filename?: string; size?: number; sizeBytes?: number; type?: string; mimetype?: string }) => ({
           name: file.name || file.filename || 'Unknown',
           size: file.size || file.sizeBytes || 0,
           type: file.type || file.mimetype || 'unknown',
@@ -249,7 +258,7 @@ async function getHistoryStatistics(sessionId: string) {
       totalFiles: allHistory.reduce((sum, h) => sum + (Array.isArray(h.files) ? h.files.length : 0), 0),
       totalSize: allHistory.reduce((sum, h) => {
         if (!Array.isArray(h.files)) return sum;
-        return sum + h.files.reduce((fileSum: number, file: any) => 
+        return sum + h.files.reduce((fileSum: number, file: { size?: number; sizeBytes?: number }) => 
           fileSum + (file.size || file.sizeBytes || 0), 0
         );
       }, 0),
@@ -278,7 +287,16 @@ async function getHistoryStatistics(sessionId: string) {
 /**
  * Helper function to convert history to CSV format
  */
-function convertToCSV(history: any[]): string {
+function convertToCSV(history: Array<{
+  id: string;
+  targetType: string;
+  targetIdentifier: string;
+  files: unknown[];
+  status: string;
+  createdAt: Date;
+  completedAt: Date | null;
+  messageId?: string;
+}>): string {
   if (history.length === 0) {
     return 'No data available';
   }
@@ -302,7 +320,7 @@ function convertToCSV(history: any[]): string {
       item.targetType,
       item.targetIdentifier,
       Array.isArray(item.files) ? item.files.length : 0,
-      Array.isArray(item.files) ? item.files.reduce((sum: number, f: any) => sum + (f.size || 0), 0) : 0,
+      Array.isArray(item.files) ? item.files.reduce((sum: number, f: { size?: number }) => sum + (f.size || 0), 0) : 0,
       item.status,
       item.createdAt.toISOString(),
       item.completedAt ? item.completedAt.toISOString() : '',

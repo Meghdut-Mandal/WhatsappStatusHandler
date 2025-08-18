@@ -8,6 +8,8 @@
 import { getBaileysManager } from '../socketManager';
 import { errorHandler } from '../errors/ErrorHandler';
 import { isWebSocketPolyfillReady, getBufferUtil, getUtf8Validate } from './websocket-polyfill';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 export interface DiagnosticResult {
   timestamp: Date;
@@ -307,8 +309,7 @@ export class WebSocketDiagnostics {
       }
       
       // Check for required directories
-      const fs = require('fs');
-      const path = require('path');
+      // Using imported fs and path modules
       
       const requiredDirs = [
         'data/auth_sessions',

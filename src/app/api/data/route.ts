@@ -11,7 +11,7 @@ interface ExportData {
   exportDate: string;
   version: string;
   dataType: string;
-  settings?: any;
+  settings?: Record<string, unknown>;
   sessions?: Array<{
     id: string;
     deviceName: string;
@@ -29,8 +29,8 @@ interface ExportData {
     completedAt: Date | null;
   }>;
   contacts?: {
-    favorites: any[];
-    broadcastLists: any[];
+    favorites: Array<Record<string, unknown>>;
+    broadcastLists: Array<Record<string, unknown>>;
     note: string;
   };
 }
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
         const settingsPath = path.join(process.cwd(), 'data', 'settings.json');
         const settingsData = await fs.readFile(settingsPath, 'utf8');
         exportData.settings = JSON.parse(settingsData);
-      } catch (error) {
+      } catch (_error) {
         // Settings not available, skip
       }
     }

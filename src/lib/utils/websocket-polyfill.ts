@@ -7,11 +7,12 @@
  */
 
 // Ensure buffer utilities are available
-let bufferUtil: any;
-let utf8Validate: any;
+let bufferUtil: { mask: (source: Buffer, mask: Buffer, output: Buffer, offset: number, length: number) => void };
+let utf8Validate: (buffer: Buffer) => boolean;
 
 try {
-  bufferUtil = require('bufferutil');
+  // Dynamic import in try-catch for optional dependency
+  bufferUtil = eval('require')("bufferutil");
 } catch (error) {
   // Fallback implementation for bufferUtil.mask
   bufferUtil = {
@@ -29,7 +30,8 @@ try {
 }
 
 try {
-  utf8Validate = require('utf-8-validate');
+  // Dynamic import in try-catch for optional dependency
+  utf8Validate = eval('require')("utf-8-validate");
 } catch (error) {
   // Fallback implementation for utf8Validate
   utf8Validate = (buffer: Buffer) => {

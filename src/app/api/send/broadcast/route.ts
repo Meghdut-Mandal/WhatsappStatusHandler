@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
 /**
  * GET /api/send/broadcast - Get broadcast lists
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Check connection
     const baileysManager = getBaileysManager();
@@ -182,7 +182,11 @@ export async function PUT(request: NextRequest) {
 
     const manager = getSendTargetingManager();
     
-    const updates: any = {};
+    const updates: {
+      name?: string;
+      description?: string;
+      recipients?: string[];
+    } = {};
     if (name !== undefined) updates.name = name;
     if (description !== undefined) updates.description = description;
     if (recipients !== undefined) updates.recipients = recipients;

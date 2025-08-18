@@ -7,7 +7,7 @@ import '@/lib/init-websocket';
 /**
  * GET /api/auth/status - Check WhatsApp connection status
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const baileysManager = getBaileysManager();
     let connectionStatus = baileysManager.getConnectionStatus();

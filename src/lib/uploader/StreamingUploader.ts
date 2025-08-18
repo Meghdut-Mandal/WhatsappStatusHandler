@@ -136,7 +136,7 @@ export class StreamingUploader {
         try {
           const writeStream = createWriteStream(storagePath);
           const hash = crypto.createHash('sha256');
-          let uploadedBytes = 0;
+          const uploadedBytes = 0;
 
           // Convert File to stream
           const arrayBuffer = await file.arrayBuffer();

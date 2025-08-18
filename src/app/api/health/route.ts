@@ -51,9 +51,9 @@ export async function GET(request: NextRequest) {
         uptime: number;
       };
       details?: {
-        healthChecks: any[];
-        metrics: any;
-        alerts: any[];
+        healthChecks: Array<Record<string, unknown>>;
+        metrics: Record<string, unknown>;
+        alerts: Array<Record<string, unknown>>;
         system: {
           nodeVersion: string;
           platform: string;

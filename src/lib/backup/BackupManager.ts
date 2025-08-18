@@ -6,6 +6,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import JSZip from 'jszip';
+import crypto from 'crypto';
 import { SessionService, SendHistoryService, MediaMetaService } from '../db';
 import { EventEmitter } from 'events';
 
@@ -650,7 +651,7 @@ export class BackupManager extends EventEmitter {
 
   private async encryptData(data: Buffer | string, password: string): Promise<Buffer> {
     // This is a simplified encryption - in production use proper encryption
-    const crypto = require('crypto');
+    // Using imported crypto module
     const algorithm = 'aes-256-gcm';
     const key = crypto.scryptSync(password, 'salt', 32);
     const iv = crypto.randomBytes(16);
@@ -676,7 +677,7 @@ export class BackupManager extends EventEmitter {
   }
 
   private async calculateChecksum(filepath: string): Promise<string> {
-    const crypto = require('crypto');
+    // Using imported crypto module
     const fileData = await fs.readFile(filepath);
     return crypto.createHash('sha256').update(fileData).digest('hex');
   }

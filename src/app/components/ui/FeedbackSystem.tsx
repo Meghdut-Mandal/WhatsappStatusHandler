@@ -329,7 +329,7 @@ export const FeedbackSystem: React.FC<FeedbackSystemProps> = ({
               aria-describedby="email-help"
             />
             <p id="email-help" className="mt-1 text-xs text-gray-600">
-              Provide your email if you'd like us to follow up with you
+              Provide your email if you&apos;d like us to follow up with you
             </p>
           </div>
 

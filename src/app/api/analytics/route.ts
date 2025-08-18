@@ -122,7 +122,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function generateTimeSeriesData(sendHistory: any[], days: number, timeUnit: 'hour' | 'day') {
+function generateTimeSeriesData(sendHistory: Array<{
+  status: string;
+  createdAt: Date;
+  files: unknown[];
+}>, days: number, timeUnit: 'hour' | 'day') {
   const now = new Date();
   const timeSeriesMessages = [];
   const timeSeriesUploads = [];

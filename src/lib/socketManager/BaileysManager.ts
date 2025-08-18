@@ -511,11 +511,11 @@ export class BaileysManager extends EventEmitter {
     try {
       // Remove all listeners attached to the old socket
       try {
-        // removeAllListeners may be typed to require an event; cast to any for full cleanup
-        (this.socket.ev as any).removeAllListeners();
+        // removeAllListeners may be typed to require an event; cast to proper type for full cleanup
+        (this.socket.ev as { removeAllListeners: () => void }).removeAllListeners();
       } catch {}
       // End the websocket if still open
-      if (this.socket.ws && (this.socket.ws as any).readyState === 1) {
+      if (this.socket.ws && (this.socket.ws as { readyState: number }).readyState === 1) {
         this.socket.end(new Boom('client requested close'));
       }
     } catch (err) {
@@ -676,7 +676,7 @@ export class BaileysManager extends EventEmitter {
    * Check if socket is connected and ready
    */
   isSocketReady(): boolean {
-    return !!(this.socket && this.socket.ws && (this.socket.ws as any).readyState === 1);
+    return !!(this.socket && this.socket.ws && (this.socket.ws as { readyState: number }).readyState === 1);
   }
 
   /**
@@ -687,7 +687,7 @@ export class BaileysManager extends EventEmitter {
       return 'not_initialized';
     }
     
-    const readyState = (this.socket.ws as any).readyState;
+    const readyState = (this.socket.ws as { readyState: number }).readyState;
     switch (readyState) {
       case 0: return 'connecting'; // WebSocket.CONNECTING
       case 1: return 'open';       // WebSocket.OPEN
@@ -708,7 +708,7 @@ export class BaileysManager extends EventEmitter {
       if (this.socket) {
         try {
           // Check if socket is still open before attempting to close
-          if (this.socket.ws && (this.socket.ws as any).readyState === 1) { // WebSocket.OPEN = 1
+          if (this.socket.ws && (this.socket.ws as { readyState: number }).readyState === 1) { // WebSocket.OPEN = 1
             this.socket.end(new Boom('client requested close'));
           } else {
             console.log('WebSocket already closed, skipping end() call');
@@ -961,7 +961,6 @@ export class BaileysManager extends EventEmitter {
 
 // Robust singleton across Next.js hot-reloads using globalThis
 declare global {
-  // eslint-disable-next-line no-var
   var __BAILEYS_MANAGER__: BaileysManager | undefined;
 }
 

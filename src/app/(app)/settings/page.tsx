@@ -95,7 +95,13 @@ export default function SettingsPage() {
       
       if (data.success && data.sessions) {
         // Convert date strings to Date objects
-        const sessionsWithDates: SessionInfo[] = data.sessions.map((session: any) => ({
+        const sessionsWithDates: SessionInfo[] = data.sessions.map((session: {
+          id: string;
+          deviceName: string;
+          createdAt: string;
+          lastSeenAt: string;
+          isActive: boolean;
+        }) => ({
           ...session,
           createdAt: new Date(session.createdAt),
           lastSeenAt: new Date(session.lastSeenAt),

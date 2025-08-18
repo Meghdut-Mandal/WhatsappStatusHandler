@@ -113,8 +113,8 @@ export function PairingCodeDisplay({
           <ol className="text-sm text-blue-800 space-y-1">
             <li>1. Open WhatsApp on your phone</li>
             <li>2. Go to Settings → Linked Devices</li>
-            <li>3. Tap "Link a Device"</li>
-            <li>4. Select "Link with phone number instead"</li>
+            <li>3. Tap &quot;Link a Device&quot;</li>
+            <li>4. Select &quot;Link with phone number instead&quot;</li>
             <li>5. Enter this code: <span className="font-mono font-bold">{pairingCode}</span></li>
           </ol>
         </div>
