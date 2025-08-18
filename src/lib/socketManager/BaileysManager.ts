@@ -12,6 +12,7 @@ import { EventEmitter } from 'events';
 import path from 'path';
 import fs from 'fs/promises';
 import { ConnectionStabilizer } from './ConnectionStabilizer';
+import { ContactManager } from './ContactManager';
 import { errorHandler, ErrorCategory, ErrorSeverity } from '../errors/ErrorHandler';
 import { initializeWebSocketPolyfills, isWebSocketPolyfillReady } from '../utils/websocket-polyfill';
 import { logWebSocketFixTest } from '../utils/test-websocket-fix';
@@ -29,6 +30,7 @@ export class BaileysManager extends EventEmitter {
   private authDir: string;
   private connectionStatus: ConnectionStatus = { status: 'disconnected' };
   private connectionStabilizer: ConnectionStabilizer;
+  private contactManager: ContactManager | null = null;
   private sessionRecoveryAttempts = 0;
   private maxSessionRecoveryAttempts = 3;
   // Prevent concurrent or duplicate inits/sockets
@@ -65,7 +67,7 @@ export class BaileysManager extends EventEmitter {
    */
   private createLogger() {
     // Simple logger for development, minimal for production
-    const isDev = process.env.NODE_ENV === 'development';
+    const isDev = false;
     
     const logFunction = (level: string, ...args: unknown[]) => {
       if (isDev || level === 'error') {
@@ -437,6 +439,13 @@ export class BaileysManager extends EventEmitter {
           console.warn('Connection replaced by another instance. Skipping auto-reconnect to avoid conflicts.');
         }
 
+        // Clean up ContactManager on disconnection
+        if (this.contactManager) {
+          console.log('BaileysManager: Stopping ContactManager sync operations');
+          this.contactManager.stopAutoSync();
+          this.contactManager = null;
+        }
+
         this.connectionStatus = { status: 'disconnected' };
         this.emit('status_update', this.connectionStatus);
       } else if (connection === 'open') {
@@ -452,6 +461,39 @@ export class BaileysManager extends EventEmitter {
         };
         this.emit('status_update', this.connectionStatus);
         this.sessionRecoveryAttempts = 0;
+
+        // Initialize ContactManager with automatic sync scheduler
+        if (this.socket && !this.contactManager) {
+          console.log('BaileysManager: Initializing ContactManager with automatic sync');
+          this.contactManager = new ContactManager(this.socket);
+          
+          // Forward ContactManager events
+          this.contactManager.on('sync_scheduler_ready', () => {
+            console.log('BaileysManager: Sync scheduler ready');
+            this.emit('sync_scheduler_ready');
+          });
+
+          this.contactManager.on('auto_sync_enabled', () => {
+            console.log('BaileysManager: Automatic sync enabled');
+            this.emit('auto_sync_enabled');
+          });
+
+          this.contactManager.on('auto_sync_started', (data) => {
+            this.emit('auto_sync_started', data);
+          });
+
+          this.contactManager.on('auto_sync_completed', (data) => {
+            this.emit('auto_sync_completed', data);
+          });
+
+          this.contactManager.on('auto_sync_failed', (data) => {
+            this.emit('auto_sync_failed', data);
+          });
+
+          this.contactManager.on('sync_health_critical', (data) => {
+            this.emit('sync_health_critical', data);
+          });
+        }
 
         // Save or update session in database along with auth state
         await this.saveSessionToDatabase(existingSessionId, sessionDir);
@@ -882,6 +924,52 @@ export class BaileysManager extends EventEmitter {
    */
   getConnectionMetrics() {
     return this.connectionStabilizer.getMetrics();
+  }
+
+  /**
+   * Get ContactManager instance
+   */
+  getContactManager(): ContactManager | null {
+    return this.contactManager;
+  }
+
+  /**
+   * Get automatic sync status
+   */
+  getAutoSyncStatus() {
+    if (!this.contactManager) {
+      return {
+        available: false,
+        reason: 'ContactManager not initialized'
+      };
+    }
+
+    return {
+      available: true,
+      ...this.contactManager.getAutoSyncStatus()
+    };
+  }
+
+  /**
+   * Trigger manual sync
+   */
+  async triggerManualSync(type: 'full' | 'incremental' = 'full'): Promise<void> {
+    if (!this.contactManager) {
+      throw new Error('ContactManager not initialized');
+    }
+
+    return this.contactManager.triggerManualSync(type);
+  }
+
+  /**
+   * Update sync configuration
+   */
+  updateSyncConfig(config: any): void {
+    if (!this.contactManager) {
+      throw new Error('ContactManager not initialized');
+    }
+
+    this.contactManager.updateSyncConfig(config);
   }
 
   /**

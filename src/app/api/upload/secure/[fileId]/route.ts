@@ -3,9 +3,9 @@ import { getSecureFileHandler } from '@/lib/security/SecureFileHandler';
 import { getSecurityMonitor } from '@/lib/security/SecurityMonitor';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     fileId: string;
-  };
+  }>;
 }
 
 /**
@@ -13,7 +13,7 @@ interface RouteParams {
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const { fileId } = params;
+    const { fileId } = await params;
     const { searchParams } = new URL(request.url);
     const password = searchParams.get('password');
 
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       source: 'SecureDownloadAPI',
       description: 'Failed to access secure file',
       metadata: {
-        fileId: params.fileId,
+        fileId: (await params).fileId,
         error: error instanceof Error ? error.message : 'Unknown error'
       }
     });
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const { fileId } = params;
+    const { fileId } = await params;
 
     if (!fileId) {
       return NextResponse.json({
@@ -130,7 +130,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       source: 'SecureDeleteAPI',
       description: 'Failed to delete secure file',
       metadata: {
-        fileId: params.fileId,
+        fileId: (await params).fileId,
         error: error instanceof Error ? error.message : 'Unknown error'
       }
     });
@@ -147,7 +147,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
  */
 export async function HEAD(request: NextRequest, { params }: RouteParams) {
   try {
-    const { fileId } = params;
+    const { fileId } = await params;
 
     if (!fileId) {
       return NextResponse.json({

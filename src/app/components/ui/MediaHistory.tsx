@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { MediaPreview } from './MediaPreview';
 import { Button } from './Button';
 import { FileWithPreview } from './FileUpload';
@@ -69,21 +69,28 @@ export function MediaHistory({
   const [hasMore, setHasMore] = useState(true);
   const limit = 50;
 
-  // Fetch media history
-  const fetchMediaHistory = useCallback(async (reset = false) => {
+  // Store the latest filter/sort values in refs to avoid dependency cycles
+  const latestFiltersRef = useRef({ sortBy, sortOrder, searchQuery, filter });
+  latestFiltersRef.current = { sortBy, sortOrder, searchQuery, filter };
+
+  // Stable function that doesn't depend on changing values
+  const fetchMediaHistory = useCallback(async (reset = false, customOffset?: number) => {
     try {
       setLoading(true);
       setError(null);
 
+      const { sortBy: currentSortBy, sortOrder: currentSortOrder, searchQuery: currentSearchQuery, filter: currentFilter } = latestFiltersRef.current;
+      const currentOffset = reset ? 0 : customOffset ?? 0;
+
       const params = new URLSearchParams({
         limit: limit.toString(),
-        offset: reset ? '0' : offset.toString(),
-        sortBy,
-        sortOrder,
+        offset: currentOffset.toString(),
+        sortBy: currentSortBy,
+        sortOrder: currentSortOrder,
       });
 
-      if (searchQuery) params.set('search', searchQuery);
-      if (filter !== 'all') params.set('mimeType', filter);
+      if (currentSearchQuery) params.set('search', currentSearchQuery);
+      if (currentFilter !== 'all') params.set('mimeType', currentFilter);
 
       const response = await fetch(`/api/upload/history?${params}`);
       const result = await response.json();
@@ -106,7 +113,7 @@ export function MediaHistory({
     } finally {
       setLoading(false);
     }
-  }, [offset, sortBy, sortOrder, searchQuery, filter]);
+  }, []); // No dependencies - stable function
 
   // Initial load and reload on filter/search changes
   useEffect(() => {
@@ -124,9 +131,9 @@ export function MediaHistory({
   // Handle load more
   const handleLoadMore = useCallback(() => {
     if (!loading && hasMore) {
-      fetchMediaHistory(false);
+      fetchMediaHistory(false, offset);
     }
-  }, [loading, hasMore, fetchMediaHistory]);
+  }, [loading, hasMore, fetchMediaHistory, offset]);
 
   // Handle file selection toggle
   const handleFileSelectionToggle = useCallback((fileId: string) => {

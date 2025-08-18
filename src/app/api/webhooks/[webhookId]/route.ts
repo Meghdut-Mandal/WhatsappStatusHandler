@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getWebhookManager } from '@/lib/integrations/WebhookManager';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     webhookId: string;
-  };
+  }>;
 }
 
 /**
@@ -12,7 +12,7 @@ interface RouteParams {
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const { webhookId } = params;
+    const { webhookId } = await params;
     const webhookManager = getWebhookManager();
     const webhook = webhookManager.getWebhook(webhookId);
 
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const { webhookId } = params;
+    const { webhookId } = await params;
     const body = await request.json();
     const { name, url, events, secret, enabled, retryAttempts, timeout, headers } = body;
 
@@ -84,7 +84,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const { webhookId } = params;
+    const { webhookId } = await params;
     const webhookManager = getWebhookManager();
     const deleted = await webhookManager.unregisterWebhook(webhookId);
 

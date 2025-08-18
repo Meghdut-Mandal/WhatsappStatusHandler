@@ -1,5 +1,7 @@
 // Existing components
 export { Button } from './Button';
+export { Input } from './Input';
+export { Badge } from './Badge';
 export { ConnectionStatus } from './ConnectionStatus';
 export { ErrorBoundary } from './ErrorBoundary';
 export { Loading } from './Loading';
@@ -25,6 +27,11 @@ export {
   SessionManagement 
 } from './SettingsInterface';
 
+// Sync and notification components
+export { ToastProvider, useToast } from './Toast';
+export { SyncStatusIndicator } from './SyncStatusIndicator';
+export { ContactsErrorBoundary, useErrorHandler } from './ContactsErrorBoundary';
+
 // Types
 export type { FileWithPreview } from './FileUpload';
 export type { UploadProgressItem } from './UploadProgress';
@@ -42,3 +49,5 @@ export type {
   SessionManagementProps, 
   SessionInfo 
 } from './SettingsInterface';
+export type { Toast } from './Toast';
+export type { SyncStatus } from './SyncStatusIndicator';

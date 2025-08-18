@@ -57,3 +57,55 @@ model MediaMeta {
   
   @@map("media_meta")
 }
+
+model Contact {
+  id              String    @id // WhatsApp JID
+  name            String?
+  pushName        String?
+  notify          String?
+  verifiedName    String?
+  status          String?
+  phoneNumber     String?
+  isBusiness      Boolean   @default(false)
+  isMyContact     Boolean   @default(false)
+  isBlocked       Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  isFavorite      Boolean   @default(false)
+  profilePicUrl   String?
+  lastSeen        DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastSyncAt      DateTime  @default(now())
+  
+  @@map("contacts")
+}
+
+model Group {
+  id              String    @id // WhatsApp Group JID
+  subject         String
+  description     String?
+  participantCount Int      @default(0)
+  creation        DateTime?
+  owner           String?
+  userRole        String?   // 'member', 'admin', 'superadmin'
+  canSend         Boolean   @default(true)
+  isActive        Boolean   @default(true)
+  profilePicUrl   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastSyncAt      DateTime  @default(now())
+  
+  @@map("groups")
+}
+
+model SyncLog {
+  id          String    @id @default(cuid())
+  type        String    // 'contacts', 'groups', 'full'
+  status      String    // 'started', 'completed', 'failed'
+  itemsCount  Int?
+  errorMessage String?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  
+  @@map("sync_logs")
+}
