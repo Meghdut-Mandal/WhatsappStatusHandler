@@ -72,6 +72,9 @@ export class ContactManager extends EventEmitter {
 
   constructor(socket: WASocket) {
     super();
+    
+    // Set max listeners to prevent memory leak warnings
+    this.setMaxListeners(30);
     this.socket = socket;
     this.contactExtractionService = new ContactExtractionService(socket);
     this.groupSyncService = new GroupSyncService(socket);
@@ -1844,5 +1847,32 @@ export class ContactManager extends EventEmitter {
    */
   stopSyncMonitoring(): void {
     this.syncMonitor.stopMonitoring();
+  }
+
+  /**
+   * Cleanup all listeners and resources
+   */
+  cleanup(): void {
+    // Remove all listeners from this EventEmitter
+    this.removeAllListeners();
+    
+    // Clean up sync scheduler
+    if (this.syncScheduler) {
+      this.syncScheduler.destroy();
+    }
+    
+    // Clean up sync monitor
+    if (this.syncMonitor) {
+      this.syncMonitor.destroy();
+    }
+    
+    // Clean up group sync service
+    if (this.groupSyncService) {
+      this.groupSyncService.removeAllListeners();
+    }
+    
+    // Clear maps
+    this.contacts.clear();
+    this.groups.clear();
   }
 }

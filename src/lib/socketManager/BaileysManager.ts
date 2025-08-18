@@ -41,6 +41,9 @@ export class BaileysManager extends EventEmitter {
   constructor() {
     super();
     
+    // Set max listeners to prevent memory leak warnings
+    this.setMaxListeners(20);
+    
     // Initialize WebSocket polyfills before any socket operations
     initializeWebSocketPolyfills();
     
@@ -380,6 +383,9 @@ export class BaileysManager extends EventEmitter {
   private setupEventHandlers(saveCreds: () => Promise<void>, existingSessionId?: string, sessionDir?: string) {
     if (!this.socket) return;
 
+    // Note: Baileys EventEmitter doesn't support setMaxListeners, 
+    // but we've set maxListeners on our own EventEmitter classes to prevent warnings
+
     this.socket.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
 
@@ -553,11 +559,28 @@ export class BaileysManager extends EventEmitter {
     try {
       // Remove all listeners attached to the old socket
       try {
-        // removeAllListeners may be typed to require an event; cast to proper type for full cleanup
-        (this.socket.ev as { removeAllListeners: () => void }).removeAllListeners();
+        // Baileys EventEmitter requires event type for removeAllListeners
+        if (this.socket.ev && typeof this.socket.ev.removeAllListeners === 'function') {
+          // Remove listeners for known events
+          const events = ['connection.update', 'creds.update', 'messages.upsert', 'messages.update', 'contacts.update', 'groups.update'];
+          events.forEach(event => {
+            try {
+              this.socket?.ev.removeAllListeners(event as any);
+            } catch {}
+          });
+        }
       } catch {}
+      
+
+      
+      // Clean up contact manager first
+      if (this.contactManager) {
+        this.contactManager.cleanup();
+        this.contactManager = null;
+      }
+      
       // End the websocket if still open
-      if (this.socket.ws && (this.socket.ws as { readyState: number }).readyState === 1) {
+      if (this.socket.ws && 'readyState' in this.socket.ws && (this.socket.ws as any).readyState === 1) {
         this.socket.end(new Boom('client requested close'));
       }
     } catch (err) {
@@ -718,7 +741,7 @@ export class BaileysManager extends EventEmitter {
    * Check if socket is connected and ready
    */
   isSocketReady(): boolean {
-    return !!(this.socket && this.socket.ws && (this.socket.ws as { readyState: number }).readyState === 1);
+    return !!(this.socket && this.socket.ws && 'readyState' in this.socket.ws && (this.socket.ws as any).readyState === 1);
   }
 
   /**
@@ -729,7 +752,7 @@ export class BaileysManager extends EventEmitter {
       return 'not_initialized';
     }
     
-    const readyState = (this.socket.ws as { readyState: number }).readyState;
+    const readyState = 'readyState' in this.socket.ws ? (this.socket.ws as any).readyState : -1;
     switch (readyState) {
       case 0: return 'connecting'; // WebSocket.CONNECTING
       case 1: return 'open';       // WebSocket.OPEN
@@ -750,7 +773,7 @@ export class BaileysManager extends EventEmitter {
       if (this.socket) {
         try {
           // Check if socket is still open before attempting to close
-          if (this.socket.ws && (this.socket.ws as { readyState: number }).readyState === 1) { // WebSocket.OPEN = 1
+          if (this.socket.ws && 'readyState' in this.socket.ws && (this.socket.ws as any).readyState === 1) { // WebSocket.OPEN = 1
             this.socket.end(new Boom('client requested close'));
           } else {
             console.log('WebSocket already closed, skipping end() call');
@@ -1042,8 +1065,22 @@ export class BaileysManager extends EventEmitter {
    * Cleanup resources
    */
   cleanup(): void {
+    // Clean up connection stabilizer
     this.connectionStabilizer.destroy();
+    
+    // Clean up contact manager
+    if (this.contactManager) {
+      this.contactManager.cleanup();
+      this.contactManager = null;
+    }
+    
+    // Remove all listeners from this EventEmitter
     this.removeAllListeners();
+    
+    // Clean up socket if it exists
+    if (this.socket) {
+      this.teardownExistingSocket();
+    }
   }
 }
 

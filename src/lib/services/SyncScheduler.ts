@@ -66,6 +66,9 @@ export class SyncScheduler extends EventEmitter {
   constructor(config: Partial<SyncSchedulerConfig> = {}) {
     super();
     
+    // Set max listeners to prevent memory leak warnings
+    this.setMaxListeners(15);
+    
     this.config = {
       initialSyncDelayMs: 3000,        // 3 seconds after connection
       periodicSyncIntervalMs: 30 * 60 * 1000, // 30 minutes

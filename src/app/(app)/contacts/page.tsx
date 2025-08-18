@@ -242,11 +242,21 @@ function ContactsPageContent() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [searchTerm, contactsPagination, groupsPagination, metadata, filters, addToast, handleError]);
+  }, [
+    // Only include the necessary dependencies to prevent excessive re-renders
+    searchTerm, 
+    filters.favorites, 
+    filters.business, 
+    filters.myContacts, 
+    filters.blocked,
+    addToast, 
+    handleError
+  ]);
 
+  // Only fetch data on initial mount, not on every fetchData change
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, []);
 
   const toggleFavorite = async (contactId: string) => {
     // Optimistic update
@@ -337,7 +347,7 @@ function ContactsPageContent() {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, filters, fetchData]);
+  }, [searchTerm, filters.favorites, filters.business, filters.myContacts, filters.blocked]);
 
   const handleSendToSelected = () => {
     if (selectedItems.size === 0) {

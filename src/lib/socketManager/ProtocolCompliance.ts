@@ -107,6 +107,9 @@ export class ProtocolCompliance extends EventEmitter {
   constructor() {
     super();
     
+    // Set max listeners to prevent memory leak warnings
+    this.setMaxListeners(15);
+    
     this.metrics = {
       messagesPerMinute: 0,
       messagesPerHour: 0,

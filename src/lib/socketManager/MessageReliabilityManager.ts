@@ -81,6 +81,9 @@ export class MessageReliabilityManager extends EventEmitter {
 
   constructor() {
     super();
+    
+    // Set max listeners to prevent memory leak warnings
+    this.setMaxListeners(15);
     this.startQueueProcessor();
   }
 

@@ -1,19 +1,12 @@
 import { NextRequest } from 'next/server';
 import { getBaileysManager } from '@/lib/socketManager';
-import { ContactManager } from '@/lib/socketManager/ContactManager';
-
-let contactManager: ContactManager | null = null;
 
 function getContactManager() {
   const baileysManager = getBaileysManager();
-  const socket = baileysManager.getSocket();
-  
-  if (!socket) {
-    throw new Error('WhatsApp not connected');
-  }
+  const contactManager = baileysManager.getContactManager();
   
   if (!contactManager) {
-    contactManager = new ContactManager(socket);
+    throw new Error('WhatsApp not connected or ContactManager not initialized');
   }
   
   return contactManager;
@@ -133,23 +126,30 @@ export async function GET(request: NextRequest) {
 
         // Clean up when client disconnects
         const cleanup = () => {
-          clearInterval(heartbeatInterval);
-          manager.off('realtime_contact_update', handleContactUpdate);
-          manager.off('realtime_group_update', handleGroupUpdate);
-          manager.off('sync_progress', handleSyncProgress);
-          manager.off('auto_sync_started', handleSyncProgress);
-          manager.off('periodic_sync_started', handleSyncProgress);
-          manager.off('auto_sync_completed', handleSyncCompleted);
-          manager.off('sync_completed', handleSyncCompleted);
-          manager.off('auto_sync_failed', handleSyncFailed);
-          manager.off('sync_failed', handleSyncFailed);
-          manager.off('sync_notification', handleSyncNotification);
-          manager.off('sync_warning', handleSyncWarning);
-          manager.off('sync_error', handleSyncError);
+          try {
+            clearInterval(heartbeatInterval);
+            manager.off('realtime_contact_update', handleContactUpdate);
+            manager.off('realtime_group_update', handleGroupUpdate);
+            manager.off('sync_progress', handleSyncProgress);
+            manager.off('auto_sync_started', handleSyncProgress);
+            manager.off('periodic_sync_started', handleSyncProgress);
+            manager.off('auto_sync_completed', handleSyncCompleted);
+            manager.off('sync_completed', handleSyncCompleted);
+            manager.off('auto_sync_failed', handleSyncFailed);
+            manager.off('sync_failed', handleSyncFailed);
+            manager.off('sync_notification', handleSyncNotification);
+            manager.off('sync_warning', handleSyncWarning);
+            manager.off('sync_error', handleSyncError);
+          } catch (error) {
+            console.error('Error during SSE cleanup:', error);
+          }
         };
 
         // Handle client disconnect
         request.signal.addEventListener('abort', cleanup);
+        
+        // Ensure cleanup on stream end
+        controller.closed?.then?.(cleanup).catch?.(cleanup);
 
       } catch (error) {
         console.error('Failed to set up real-time events:', error);

@@ -34,6 +34,9 @@ export class GroupSyncService extends EventEmitter {
 
   constructor(socket: WASocket) {
     super();
+    
+    // Set max listeners to prevent memory leak warnings
+    this.setMaxListeners(15);
     this.socket = socket;
   }
 
